@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Road to Chairman — Evaluation Survey</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f4f9f4; font-family: 'Montserrat', sans-serif; color: #1a3326; min-height: 100vh; }
+.header { background: #fff; border-bottom: 1px solid #c8e6d4; padding: 0.6rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.header-left .sub { color: #2d7a4f; font-size: 0.55rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; margin-bottom: 1px; }
+.header-left .title { color: #1a3326; font-size: 0.8rem; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+.step-info { text-align: right; }
+.step-info .lbl { color: #8ab09a; font-size: 0.6rem; font-weight: 600; display: block; }
+.step-info .val { color: #2d7a4f; font-size: 0.78rem; font-weight: 700; }
+#lang-select { border: 2px solid #c8e6d4; border-radius: 8px; padding: 0.3rem 0.5rem; background: #f4f9f4; color: #1a4d32; font-size: 0.68rem; font-weight: 600; font-family: 'Montserrat', sans-serif; cursor: pointer; outline: none; }
+.progress-track { height: 4px; background: #dceee4; }
+.progress-fill { height: 4px; background: linear-gradient(90deg,#2d7a4f,#4caf78); transition: width .4s ease; }
+.container { max-width: 700px; margin: 0 auto; padding: 1.75rem 1.25rem 3rem; }
+.sec-lbl { color: #8ab09a; font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+.sec-title { color: #1a4d32; font-size: 1.15rem; font-weight: 700; margin-bottom: 1.5rem; }
+.card { background: #fff; border: 1px solid #c8e6d4; border-radius: 14px; padding: 1.4rem; margin-bottom: 1.1rem; }
+.q-num { color: #8ab09a; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; }
+.q-text { color: #1a3326; font-size: 0.9rem; font-weight: 600; line-height: 1.55; margin-bottom: 1.1rem; }
+.radio-opt { display: flex; align-items: center; gap: 0.65rem; padding: 0.65rem 0.9rem; border-radius: 10px; border: 2px solid #c8e6d4; background: #f4f9f4; cursor: pointer; margin-bottom: 0.45rem; font-size: 0.82rem; color: #3a6650; font-weight: 500; transition: all .15s; }
+.radio-opt:last-child { margin-bottom: 0; }
+.radio-opt.active { border-color: #2d7a4f; background: #d6f0e2; color: #1a4d32; font-weight: 600; }
+.radio-dot { width: 17px; height: 17px; border-radius: 50%; border: 2px solid #c8e6d4; flex-shrink: 0; position: relative; transition: all .15s; }
+.radio-opt.active .radio-dot { border-color: #2d7a4f; background: #2d7a4f; }
+.radio-opt.active .radio-dot::after { content:''; position:absolute; width:6px; height:6px; border-radius:50%; background:#fff; top:50%; left:50%; transform:translate(-50%,-50%); }
+.matrix-wrap { overflow-x: auto; }
+table.mx { width: 100%; border-collapse: collapse; font-size: 0.75rem; min-width: 380px; }
+table.mx th { color: #2d7a4f; font-weight: 700; text-align: center; padding: 0.45rem 0.2rem; border-bottom: 2px solid #c8e6d4; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; }
+table.mx th:first-child { text-align: left; min-width: 140px; }
+table.mx td { padding: 0.55rem 0.2rem; text-align: center; border-bottom: 1px solid #eaf3ed; color: #3a6650; font-size: 0.78rem; }
+table.mx td:first-child { text-align: left; padding-right: 0.6rem; font-weight: 500; }
+table.mx tr:last-child td { border-bottom: none; }
+.mc { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #c8e6d4; background: #f4f9f4; cursor: pointer; margin: auto; transition: all .15s; position: relative; }
+.mc.active { border-color: #2d7a4f; background: #2d7a4f; }
+.mc.active::after { content:''; position:absolute; width:7px; height:7px; border-radius:50%; background:#fff; top:50%; left:50%; transform:translate(-50%,-50%); }
+.nps-grid { display: grid; grid-template-columns: repeat(10,1fr); gap: 5px; }
+.nps-btn { height: 42px; border-radius: 8px; border: 2px solid #c8e6d4; background: #f4f9f4; color: #8ab09a; font-size: 0.82rem; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; transition: all .15s; }
+.nps-btn.active { border-color: #2d7a4f; background: #d6f0e2; color: #1a4d32; }
+.nps-hints { display: flex; justify-content: space-between; margin-top: 6px; }
+.nps-hints span { color: #8ab09a; font-size: 0.62rem; font-weight: 500; }
+textarea { width: 100%; background: #f4f9f4; border: 1px solid #c8e6d4; border-radius: 10px; padding: 0.7rem 0.85rem; color: #1a3326; font-size: 0.85rem; resize: vertical; outline: none; line-height: 1.6; font-family: 'Montserrat', sans-serif; min-height: 120px; max-height: 400px; overflow-y: auto; word-wrap: break-word; white-space: pre-wrap; }
+input.other-input { width: 100%; margin-top: 0.6rem; background: #f4f9f4; border: 1px solid #c8e6d4; border-radius: 10px; padding: 0.65rem 0.85rem; color: #1a3326; font-size: 0.85rem; outline: none; font-family: 'Montserrat', sans-serif; display: none; }
+input.other-input.show { display: block; }
+.nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1.75rem; }
+.btn-back { padding: 0.65rem 1.3rem; border-radius: 10px; border: 1px solid #c8e6d4; background: transparent; color: #5a7a66; font-size: 0.8rem; font-weight: 600; cursor: pointer; font-family: 'Montserrat', sans-serif; }
+.btn-back:disabled { color: #c8e6d4; cursor: default; }
+.btn-fwd { padding: 0.65rem 1.6rem; border-radius: 10px; border: none; background: linear-gradient(135deg,#2d7a4f,#4caf78); color: #fff; font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: 'Montserrat', sans-serif; letter-spacing: 0.04em; }
+.btn-fwd.off { background: #e0ede6; color: #a0c4b0; cursor: not-allowed; }
+.dots { display: flex; gap: 6px; align-items: center; }
+.dot { height: 7px; width: 7px; border-radius: 4px; background: #c8e6d4; transition: all .3s; }
+.dot.on { background: #2d7a4f; width: 22px; }
+.footer-note { text-align: center; color: #a0c4b0; font-size: 0.63rem; margin-top: 1.5rem; font-weight: 500; }
+.ai-note { text-align: center; color: #b8d8c8; font-size: 0.57rem; margin-top: 0.45rem; font-weight: 500; letter-spacing: 0.03em; }
+.lang-banner { background: #fff; border: 1px solid #c8e6d4; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; color: #3a6650; font-size: 0.82rem; font-weight: 500; line-height: 1.5; }
+.page { display: none; }
+.page.active { display: block; }
+#pg-success { display: none; min-height: 100vh; background: #f4f9f4; align-items: center; justify-content: center; padding: 2rem; }
+#pg-success.show { display: flex; }
+.sw { text-align: center; max-width: 480px; margin: auto; }
+.si { width: 72px; height: 72px; border-radius: 50%; background: linear-gradient(135deg,#2d7a4f,#4caf78); display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem; font-size:30px; color:#fff; font-weight:700; }
+.st { color:#1a4d32; font-size:1.5rem; font-weight:700; margin-bottom:0.8rem; }
+.sx { color:#5a7a66; font-size:0.88rem; line-height:1.7; font-weight:500; }
+.sb { margin-top:1.75rem; padding:1.2rem; border:1px solid #b8ddc8; border-radius:12px; background:#fff; }
+.sb .sl { color:#2d7a4f; font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; font-weight:700; }
+.sb .sv { color:#1a3326; font-size:1rem; margin-top:0.3rem; font-weight:600; }
+</style>
+</head>
+<body>
+
+<div id="survey-wrap">
+  <div class="header">
+    <div class="header-left" style="display:flex;align-items:center;gap:10px;">
+      <img src="data:image/png;base64,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" style="height:70px;width:70px;object-fit:contain;flex-shrink:0;border-radius:0;padding:0;background:transparent;cursor:pointer;" onclick="logoClick()" id="logo-img" alt="Road to Chairman's Club"/>
+      <div class="sub" id="hdr-sub"></div>
+    </div>
+    <div class="header-right">
+      <div class="step-info">
+        <span class="lbl" id="step-lbl-txt"></span>
+        <span class="val" id="step-val"></span>
+      </div>
+      <select id="lang-select" onchange="changeLang(this.value)"></select>
+    </div>
+  </div>
+  <div style="background:#fff; border-bottom:1px solid #c8e6d4; padding:0.4rem 1.25rem;">
+    <p style="color:#8ab09a;font-size:0.55rem;letter-spacing:0.15em;text-transform:uppercase;font-weight:600;margin:0 0 1px;" id="main-sec-lbl"></p>
+    <h2 style="color:#1a4d32;font-size:0.88rem;font-weight:700;margin:0;" id="main-sec-title"></h2>
+  </div>
+  <div class="progress-track"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+
+  <div class="container">
+
+    <div class="page active" id="page-0">
+      <div class="card">
+        <div class="q-num" id="q1-num"></div>
+        <div class="q-text" id="q1-text"></div>
+        <div id="q1-opts"></div>
+      </div>
+      <div class="card">
+        <div class="q-num" id="q2-num"></div>
+        <div class="q-text" id="q2-text"></div>
+        <div class="matrix-wrap"><table class="mx"><thead id="q2-head"></thead><tbody id="q2-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-1">
+      <div class="card">
+        <div class="q-num" id="q3-num"></div>
+        <div class="q-text" id="q3-text"></div>
+        <div id="q3-opts"></div>
+      </div>
+      <div class="card">
+        <div class="q-num" id="q4-num"></div>
+        <div class="q-text" id="q4-text"></div>
+        <div class="matrix-wrap"><table class="mx"><thead id="q4-head"></thead><tbody id="q4-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-2">
+      <div class="card">
+        <div class="q-num" id="q5-num"></div>
+        <div class="q-text" id="q5-text"></div>
+        <textarea id="q5-ta" rows="5" maxlength="5000" oninput="checkPage(); updateCharCount(this, 'count-q5')"></textarea>
+        <div id="count-q5" style="text-align:right;font-size:0.65rem;color:#a0c4b0;margin-top:4px;"></div>
+      </div>
+      <div class="card">
+        <div class="q-num" id="q6-num"></div>
+        <div class="q-text" id="q6-text"></div>
+        <textarea id="q6-ta" rows="5" maxlength="5000" oninput="checkPage(); updateCharCount(this, 'count-q6')"></textarea>
+        <div id="count-q6" style="text-align:right;font-size:0.65rem;color:#a0c4b0;margin-top:4px;"></div>
+      </div>
+      <div class="card">
+        <div class="q-num" id="q7-num"></div>
+        <div class="q-text" id="q7-text"></div>
+        <div class="nps-grid" id="nps-grid"></div>
+        <div class="nps-hints"><span id="nps-low"></span><span id="nps-high"></span></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-3">
+      <div class="lang-banner" id="lang-banner"></div>
+      <div class="card">
+        <div class="q-num" id="p0-qnum"></div>
+        <div class="q-text" id="p0-qtext"></div>
+        <div id="region-opts"></div>
+        <input class="other-input" id="other-input" type="text" oninput="checkPage()"/>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-back" id="btn-back" onclick="goBack()" disabled></button>
+      <div class="dots" id="dots"></div>
+      <button class="btn-fwd off" id="btn-fwd" onclick="goNext()"></button>
+    </div>
+    <div class="footer-note" id="footer-note"></div>
+    <div class="ai-note" id="ai-note"></div>
+  </div>
+</div>
+
+<div id="pg-success">
+  <div class="sw">
+    <div class="si">✓</div>
+    <div class="st" id="s-title"></div>
+    <div class="sx" id="s-text"></div>
+    <div class="sb">
+      <div class="sl" id="s-label"></div>
+      <div class="sv" id="s-val"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LANGS = {
+  en: { name:'English', sub:'Quarterly Session', title:'Road to Chairman — Evaluation Survey', step:'Step', banner:'Before you continue, please select your preferred language in the upper right corner.', p0lbl:'Getting Started', p0title:'Select Your Region', p0q:'Which region do you belong to?', regions:['APAC (Asia Pacific excl. China)','China','E&A (Europe, Middle East, Africa)','EM (Eurasian Markets)','India','Mexico','SAMCAM/Brazil','Other (please specify)'], other_ph:'Please specify...', next:'Next →', back:'← Back', submit:'Submit ✓', footer:'Your answers are confidential and will only be used to improve future sessions.', ai_note:'🤖 Translations generated with AI · May contain inaccuracies', q:'Question', s1lbl:'Section 1', s1title:'Session Satisfaction', s2lbl:'Section 2', s2title:'Clarity on the Path to Chairman', s3lbl:'Section 3', s3title:'Feedback for Improvement', q1:'Overall, how satisfied were you with this quarterly session?', q1o:['Very satisfied','Somewhat satisfied','Neither satisfied nor dissatisfied','Somewhat dissatisfied','Very dissatisfied'], q2:'How satisfied were you with each of the following elements of the session?', sat:['Very Satisfied','Satisfied','Neutral','Dissatisfied','Very Dissatisfied','N/A'], q2r:['Conversation with Stephan Gratiziani','Audio/Visual Quality','Translations','Overall Duration','Quality of Content'], q3:"After this session, how clear is your path to Chairman's Club?", q3o:['Very clear — I know exactly what to do','Fairly clear — I have a good direction','Somewhat clear — I still need to fine-tune a few things','Not very clear — I still have several questions','Not clear at all — I need more guidance'], q4:'How much do you agree or disagree with the following statements?', agr:['Strongly Agree','Agree','Neutral','Disagree','Strongly Disagree','N/A'], q4r:['The report "Road to Chairman" gave me useful data to grow my business','The live coaching addressed my current challenges and doubts','I leave this session with clear actions for the next quarter'], q5:'What was the most valuable part of this quarterly session?', q6:'What would you change or add for the next quarterly session?', q7:'How likely are you to recommend the Road to Chairman program to another leader in your organization?', ta:'Write your answer here...', nlo:'Not at all likely', nhi:'Extremely likely', stitle:'Thank you!', stext:'Your feedback is key to improving the Road to Chairman program and making every session more valuable.', slabel:'Survey completed', sval:'Road to Chairman · Quarterly Session' },
+
+  es: { name:'Español', sub:'Sesión Trimestral', title:'Road to Chairman — Encuesta de Evaluación', step:'Paso', banner:'Antes de continuar, selecciona tu idioma preferido en la esquina superior derecha.', p0lbl:'Para comenzar', p0title:'Selecciona tu Región', p0q:'¿A qué región perteneces?', regions:['APAC (Asia Pacífico excl. China)','China','E&A (Europa, Oriente Medio, África)','EM (Mercados Euroasiáticos)','India','México','SAMCAM/Brasil','Otro (especifica)'], other_ph:'Especifica...', next:'Siguiente →', back:'← Atrás', submit:'Enviar ✓', footer:'Tus respuestas son confidenciales y solo se usarán para mejorar futuras sesiones.', ai_note:'🤖 Traducciones generadas con IA · Pueden contener imprecisiones', q:'Pregunta', s1lbl:'Sección 1', s1title:'Satisfacción con la Sesión', s2lbl:'Sección 2', s2title:'Claridad sobre el Camino al Chairman', s3lbl:'Sección 3', s3title:'Retroalimentación para Mejorar', q1:'En general, ¿qué tan satisfecho/a estás con esta sesión trimestral?', q1o:['Muy satisfecho/a','Algo satisfecho/a','Ni satisfecho/a ni insatisfecho/a','Algo insatisfecho/a','Muy insatisfecho/a'], q2:'¿Qué tan satisfecho/a estás con cada uno de los siguientes elementos de la sesión?', sat:['Muy satisfecho/a','Satisfecho/a','Neutral','Insatisfecho/a','Muy insatisfecho/a','N/A'], q2r:['Conversación con Stephan Gratiziani','Calidad de Audio/Video','Traducciones','Duración General','Calidad del Contenido'], q3:"Después de esta sesión, ¿qué tan claro es tu camino al Chairman's Club?", q3o:['Muy claro — sé exactamente qué hacer','Bastante claro — tengo una buena dirección','Algo claro — necesito afinar algunas cosas','No muy claro — aún tengo varias preguntas','Nada claro — necesito más orientación'], q4:'¿Qué tan de acuerdo o en desacuerdo estás con las siguientes afirmaciones?', agr:['Muy de acuerdo','De acuerdo','Neutral','En desacuerdo','Muy en desacuerdo','N/A'], q4r:['El reporte "Road to Chairman" me dio datos útiles para crecer mi negocio','El coaching en vivo abordó mis desafíos y dudas actuales','Salgo de esta sesión con acciones claras para el próximo trimestre'], q5:'¿Cuál fue la parte más valiosa de esta sesión trimestral?', q6:'¿Qué cambiarías o añadirías para la próxima sesión trimestral?', q7:'¿Qué tan probable es que recomiendes el programa Road to Chairman a otro líder de tu organización?', ta:'Escribe tu respuesta aquí...', nlo:'Nada probable', nhi:'Muy probable', stitle:'¡Gracias!', stext:'Tu retroalimentación es clave para mejorar el programa Road to Chairman y hacer cada sesión más valiosa.', slabel:'Encuesta completada', sval:'Road to Chairman · Sesión Trimestral' },
+
+  fr: { name:'Français', sub:'Session Trimestrielle', title:"Road to Chairman — Enquête d'Évaluation", step:'Étape', banner:'Avant de continuer, veuillez sélectionner votre langue préférée dans le coin supérieur droit.', p0lbl:'Pour commencer', p0title:'Sélectionnez votre région', p0q:'À quelle région appartenez-vous ?', regions:['APAC (Asie-Pacifique excl. Chine)','Chine','E&A (Europe, Moyen-Orient, Afrique)','EM (Marchés eurasiens)','Inde','Mexique','SAMCAM/Brésil','Autre (précisez)'], other_ph:'Précisez...', next:'Suivant →', back:'← Retour', submit:'Soumettre ✓', footer:'Vos réponses sont confidentielles et ne seront utilisées que pour améliorer les sessions futures.', ai_note:'🤖 Traductions générées par IA · Peuvent contenir des inexactitudes', q:'Question', s1lbl:'Section 1', s1title:'Satisfaction envers la Session', s2lbl:'Section 2', s2title:'Clarté sur le Chemin vers Chairman', s3lbl:'Section 3', s3title:"Retours pour l'Amélioration", q1:"Dans l'ensemble, à quel point étiez-vous satisfait(e) de cette session trimestrielle ?", q1o:['Très satisfait(e)','Plutôt satisfait(e)','Ni satisfait(e) ni insatisfait(e)','Plutôt insatisfait(e)','Très insatisfait(e)'], q2:'Dans quelle mesure étiez-vous satisfait(e) de chacun des éléments suivants ?', sat:['Très satisfait(e)','Satisfait(e)','Neutre','Insatisfait(e)','Très insatisfait(e)','N/A'], q2r:['Conversation avec Stephan Gratiziani','Qualité Audio/Vidéo','Traductions','Durée globale','Qualité du contenu'], q3:"Après cette session, à quel point votre chemin vers le Chairman's Club est-il clair ?", q3o:['Très clair — je sais exactement quoi faire','Assez clair — j\'ai une bonne direction','Un peu clair — je dois encore affiner quelques points','Pas très clair — j\'ai encore des questions','Pas du tout clair — j\'ai besoin de plus de guidance'], q4:"Dans quelle mesure êtes-vous d'accord avec les affirmations suivantes ?", agr:["Tout à fait d'accord","D'accord",'Neutre','En désaccord','Pas du tout d\'accord','N/A'], q4r:['Le rapport "Road to Chairman" m\'a fourni des données utiles pour développer mon activité','Le coaching en direct a abordé mes défis et doutes actuels','Je repars avec des actions claires pour le prochain trimestre'], q5:'Quelle a été la partie la plus précieuse de cette session ?', q6:'Que changeriez-vous ou ajouteriez-vous pour la prochaine session ?', q7:'Quelle est la probabilité que vous recommandiez le programme Road to Chairman à un autre leader ?', ta:'Écrivez votre réponse ici...', nlo:'Pas du tout probable', nhi:'Extrêmement probable', stitle:'Merci !', stext:'Vos commentaires sont essentiels pour améliorer le programme Road to Chairman.', slabel:'Enquête complétée', sval:'Road to Chairman · Session Trimestrielle' },
+
+  pt: { name:'Português', sub:'Sessão Trimestral', title:'Road to Chairman — Pesquisa de Avaliação', step:'Etapa', banner:'Antes de continuar, selecione o idioma de sua preferência no canto superior direito.', p0lbl:'Primeiros passos', p0title:'Selecione sua Região', p0q:'A qual região você pertence?', regions:['APAC (Ásia-Pacífico excl. China)','China','E&A (Europa, Oriente Médio, África)','EM (Mercados Eurasiáticos)','Índia','México','SAMCAM/Brasil','Outro (especifique)'], other_ph:'Especifique...', next:'Próximo →', back:'← Voltar', submit:'Enviar ✓', footer:'Suas respostas são confidenciais e serão usadas apenas para melhorar sessões futuras.', ai_note:'🤖 Traduções geradas com IA · Podem conter imprecisões', q:'Pergunta', s1lbl:'Seção 1', s1title:'Satisfação com a Sessão', s2lbl:'Seção 2', s2title:'Clareza no Caminho para Chairman', s3lbl:'Seção 3', s3title:'Feedback para Melhoria', q1:'Em geral, quão satisfeito(a) você ficou com esta sessão trimestral?', q1o:['Muito satisfeito(a)','Somewhat satisfeito(a)','Nem satisfeito(a) nem insatisfeito(a)','Somewhat insatisfeito(a)','Muito insatisfeito(a)'], q2:'Quão satisfeito(a) você ficou com cada um dos seguintes elementos da sessão?', sat:['Muito Satisfeito(a)','Satisfeito(a)','Neutro','Insatisfeito(a)','Muito Insatisfeito(a)','N/A'], q2r:['Conversa com Stephan Gratiziani','Qualidade de Áudio/Vídeo','Traduções','Duração Geral','Qualidade do Conteúdo'], q3:"Após esta sessão, quão claro está seu caminho para o Chairman's Club?", q3o:['Muito claro — sei exatamente o que fazer','Bastante claro — tenho uma boa direção','Um pouco claro — ainda preciso ajustar algumas coisas','Não muito claro — ainda tenho várias perguntas','Nada claro — preciso de mais orientação'], q4:'O quanto você concorda ou discorda das seguintes afirmações?', agr:['Concordo Plenamente','Concordo','Neutro','Discordo','Discordo Plenamente','N/A'], q4r:['O relatório "Road to Chairman" me deu dados úteis para crescer meu negócio','O coaching ao vivo abordou meus desafios e dúvidas atuais','Saio desta sessão com ações claras para o próximo trimestre'], q5:'Qual foi a parte mais valiosa desta sessão trimestral?', q6:'O que você mudaria ou acrescentaria para a próxima sessão?', q7:'Qual a probabilidade de você recomendar o programa Road to Chairman a outro líder?', ta:'Escreva sua resposta aqui...', nlo:'Nada provável', nhi:'Extremamente provável', stitle:'Obrigado(a)!', stext:'Seu feedback é fundamental para melhorar o programa Road to Chairman.', slabel:'Pesquisa concluída', sval:'Road to Chairman · Sessão Trimestral' },
+
+  de: { name:'Deutsch', sub:'Quartalssitzung', title:'Road to Chairman — Evaluierungsumfrage', step:'Schritt', banner:'Bevor Sie fortfahren, wählen Sie bitte Ihre bevorzugte Sprache in der oberen rechten Ecke aus.', p0lbl:'Erste Schritte', p0title:'Wählen Sie Ihre Region', p0q:'Welcher Region gehören Sie an?', regions:['APAC (Asien-Pazifik excl. China)','China','E&A (Europa, Naher Osten, Afrika)','EM (Eurasische Märkte)','Indien','Mexiko','SAMCAM/Brasilien','Andere (bitte angeben)'], other_ph:'Bitte angeben...', next:'Weiter →', back:'← Zurück', submit:'Absenden ✓', footer:'Ihre Antworten sind vertraulich und werden nur zur Verbesserung zukünftiger Sitzungen verwendet.', ai_note:'🤖 Übersetzungen mit KI erstellt · Können Ungenauigkeiten enthalten', q:'Frage', s1lbl:'Abschnitt 1', s1title:'Sitzungszufriedenheit', s2lbl:'Abschnitt 2', s2title:'Klarheit auf dem Weg zum Chairman', s3lbl:'Abschnitt 3', s3title:'Feedback zur Verbesserung', q1:'Wie zufrieden waren Sie insgesamt mit dieser Quartalssitzung?', q1o:['Sehr zufrieden','Eher zufrieden','Weder zufrieden noch unzufrieden','Eher unzufrieden','Sehr unzufrieden'], q2:'Wie zufrieden waren Sie mit den folgenden Elementen der Sitzung?', sat:['Sehr zufrieden','Zufrieden','Neutral','Unzufrieden','Sehr unzufrieden','N/A'], q2r:['Gespräch mit Stephan Gratiziani','Audio-/Videoqualität','Übersetzungen','Gesamtdauer','Inhaltsqualität'], q3:"Wie klar ist Ihr Weg zum Chairman's Club nach dieser Sitzung?", q3o:['Sehr klar — ich weiß genau, was zu tun ist','Ziemlich klar — ich habe eine gute Richtung','Einigermaßen klar — ich muss noch einiges verfeinern','Nicht sehr klar — ich habe noch Fragen','Überhaupt nicht klar — ich brauche mehr Orientierung'], q4:'Wie sehr stimmen Sie den folgenden Aussagen zu?', agr:['Stimme voll zu','Stimme zu','Neutral','Stimme nicht zu','Stimme überhaupt nicht zu','N/A'], q4r:['Der Bericht "Road to Chairman" lieferte mir nützliche Daten für mein Geschäftswachstum','Das Live-Coaching hat meine aktuellen Herausforderungen angesprochen','Ich verlasse die Sitzung mit klaren Maßnahmen für das nächste Quartal'], q5:'Was war der wertvollste Teil dieser Quartalssitzung?', q6:'Was würden Sie für die nächste Quartalssitzung ändern oder ergänzen?', q7:'Wie wahrscheinlich ist es, dass Sie das Road to Chairman-Programm einem anderen Leader empfehlen?', ta:'Schreiben Sie Ihre Antwort hier...', nlo:'Sehr unwahrscheinlich', nhi:'Äußerst wahrscheinlich', stitle:'Vielen Dank!', stext:'Ihr Feedback ist entscheidend für die Verbesserung des Road to Chairman Programms.', slabel:'Umfrage abgeschlossen', sval:'Road to Chairman · Quartalssitzung' },
+
+  it: { name:'Italiano', sub:'Sessione Trimestrale', title:'Road to Chairman — Sondaggio di Valutazione', step:'Fase', banner:"Prima di continuare, seleziona la tua lingua preferita nell'angolo in alto a destra.", p0lbl:'Per iniziare', p0title:'Seleziona la tua Regione', p0q:'A quale regione appartieni?', regions:['APAC (Asia Pacifico excl. Cina)','Cina','E&A (Europa, Medio Oriente, Africa)','EM (Mercati Eurasiatici)','India','Messico','SAMCAM/Brasile','Altro (specifica)'], other_ph:'Specifica...', next:'Avanti →', back:'← Indietro', submit:'Invia ✓', footer:'Le tue risposte sono riservate e verranno utilizzate solo per migliorare le sessioni future.', ai_note:'🤖 Traduzioni generate con IA · Possono contenere imprecisioni', q:'Domanda', s1lbl:'Sezione 1', s1title:'Soddisfazione della Sessione', s2lbl:'Sezione 2', s2title:'Chiarezza sul Percorso verso Chairman', s3lbl:'Sezione 3', s3title:'Feedback per il Miglioramento', q1:'In generale, quanto sei soddisfatto/a di questa sessione trimestrale?', q1o:['Molto soddisfatto/a','Abbastanza soddisfatto/a','Né soddisfatto/a né insoddisfatto/a','Abbastanza insoddisfatto/a','Molto insoddisfatto/a'], q2:'Quanto sei soddisfatto/a di ciascuno dei seguenti elementi della sessione?', sat:['Molto Soddisfatto/a','Soddisfatto/a','Neutro','Insoddisfatto/a','Molto Insoddisfatto/a','N/A'], q2r:['Conversazione con Stephan Gratiziani','Qualità Audio/Video','Traduzioni','Durata complessiva','Qualità del Contenuto'], q3:"Dopo questa sessione, quanto è chiaro il tuo percorso verso il Chairman's Club?", q3o:['Molto chiaro — so esattamente cosa fare','Abbastanza chiaro — ho una buona direzione','Abbastanza chiaro — devo ancora perfezionare qualcosa','Non molto chiaro — ho ancora alcune domande','Per niente chiaro — ho bisogno di più guida'], q4:"Quanto sei d'accordo o in disaccordo con le seguenti affermazioni?", agr:["Completamente d'accordo","D'accordo",'Neutro','In disaccordo','Assolutamente in disaccordo','N/A'], q4r:['Il rapporto "Road to Chairman" mi ha fornito dati utili per far crescere il mio business','Il coaching dal vivo ha affrontato le mie sfide e dubbi attuali','Esco da questa sessione con azioni chiare per il prossimo trimestre'], q5:'Qual è stata la parte più preziosa di questa sessione trimestrale?', q6:'Cosa cambieresti o aggiungeresti per la prossima sessione?', q7:'Quanto è probabile che tu raccomandi il programma Road to Chairman a un altro leader?', ta:'Scrivi la tua risposta qui...', nlo:'Per niente probabile', nhi:'Estremamente probabile', stitle:'Grazie!', stext:'Il tuo feedback è fondamentale per migliorare il programma Road to Chairman.', slabel:'Sondaggio completato', sval:'Road to Chairman · Sessione Trimestrale' },
+
+  ru: { name:'Русский', sub:'Квартальная сессия', title:'Road to Chairman — Оценочный опрос', step:'Шаг', banner:'Прежде чем продолжить, выберите предпочитаемый язык в правом верхнем углу.', p0lbl:'Начало', p0title:'Выберите свой регион', p0q:'К какому региону вы относитесь?', regions:['APAC (Азиатско-Тихоокеанский, кроме Китая)','Китай','E&A (Европа, Ближний Восток, Африка)','EM (Евразийские рынки)','Индия','Мексика','SAMCAM/Бразилия','Другое (укажите)'], other_ph:'Укажите...', next:'Далее →', back:'← Назад', submit:'Отправить ✓', footer:'Ваши ответы конфиденциальны и будут использованы только для улучшения будущих сессий.', ai_note:'🤖 Переводы созданы с помощью ИИ · Могут содержать неточности', q:'Вопрос', s1lbl:'Раздел 1', s1title:'Удовлетворённость сессией', s2lbl:'Раздел 2', s2title:'Ясность пути к Chairman', s3lbl:'Раздел 3', s3title:'Обратная связь для улучшения', q1:'В целом, насколько вы были удовлетворены этой квартальной сессией?', q1o:['Очень доволен/довольна','Скорее доволен/довольна','Ни доволен, ни недоволен','Скорее недоволен','Очень недоволен/довольна'], q2:'Насколько вы были удовлетворены следующими элементами сессии?', sat:['Очень удовлетворён','Удовлетворён','Нейтрально','Неудовлетворён','Очень неудовлетворён','Н/П'], q2r:['Разговор со Stephan Gratiziani','Качество аудио/видео','Переводы','Общая продолжительность','Качество контента'], q3:"После этой сессии, насколько ясен ваш путь к Chairman's Club?", q3o:['Очень ясен — я точно знаю, что делать','Достаточно ясен — есть хорошее направление','Немного ясен — нужно ещё уточнить детали','Не очень ясен — ещё есть вопросы','Совсем не ясен — нужно больше руководства'], q4:'Насколько вы согласны или не согласны со следующими утверждениями?', agr:['Полностью согласен','Согласен','Нейтрально','Не согласен','Категорически не согласен','Н/П'], q4r:['Отчёт "Road to Chairman" дал полезные данные для развития бизнеса','Живой коучинг затронул мои текущие задачи и сомнения','Ухожу с сессии с чёткими действиями на следующий квартал'], q5:'Что было наиболее ценным в этой сессии?', q6:'Что бы вы изменили или добавили на следующей сессии?', q7:'Насколько вероятно, что вы порекомендуете программу Road to Chairman другому руководителю?', ta:'Напишите ваш ответ здесь...', nlo:'Совсем не вероятно', nhi:'Очень вероятно', stitle:'Спасибо!', stext:'Ваша обратная связь важна для улучшения программы Road to Chairman.', slabel:'Опрос завершён', sval:'Road to Chairman · Квартальная сессия' },
+
+  zh: { name:'繁體中文', sub:'季度會議', title:'Road to Chairman — 評估問卷', step:'步驟', banner:'在繼續之前，請在右上角選擇您偏好的語言。', p0lbl:'開始', p0title:'選擇您的地區', p0q:'您屬於哪個地區？', regions:['APAC（亞太地區，不含中國）','中國','E&A（歐洲、中東、非洲）','EM（歐亞市場）','印度','墨西哥','SAMCAM/巴西','其他（請說明）'], other_ph:'請說明...', next:'下一步 →', back:'← 返回', submit:'提交 ✓', footer:'您的回答是保密的，只會用於改善未來的會議。', ai_note:'🤖 翻譯由 AI 生成 · 可能含有不準確之處', q:'問題', s1lbl:'第 1 節', s1title:'會議滿意度', s2lbl:'第 2 節', s2title:'通往主席之路的清晰度', s3lbl:'第 3 節', s3title:'改善意見', q1:'整體而言，您對這次季度會議的滿意程度如何？', q1o:['非常滿意','有些滿意','既不滿意也不不滿意','有些不滿意','非常不滿意'], q2:'您對以下各個會議元素的滿意程度如何？', sat:['非常滿意','滿意','中立','不滿意','非常不滿意','不適用'], q2r:['與 Stephan Gratiziani 的對話','音視頻質量','翻譯','整體時長','內容質量'], q3:"這次會議結束後，您通往 Chairman's Club 的路徑有多清晰？", q3o:['非常清晰 — 確切知道該怎麼做','相當清晰 — 有明確的方向','有些清晰 — 仍需調整一些細節','不太清晰 — 仍有幾個問題','完全不清晰 — 需要更多指導'], q4:'您對以下陳述的同意程度如何？', agr:['非常同意','同意','中立','不同意','非常不同意','不適用'], q4r:['"Road to Chairman" 報告提供了有用的業務增長數據','實時輔導解決了當前的挑戰和疑慮','帶著明確的下季度行動計劃離開本次會議'], q5:'本次季度會議中最有價值的部分是什麼？', q6:'您希望在下次季度會議中改變或增加什麼？', q7:'您向組織中其他領導者推薦 Road to Chairman 計劃的可能性有多大？', ta:'請在此寫下您的回答...', nlo:'完全不可能', nhi:'極有可能', stitle:'感謝您！', stext:'您的反饋對改善 Road to Chairman 計劃至關重要。', slabel:'問卷已完成', sval:'Road to Chairman · 季度會議' },
+
+  ja: { name:'日本語', sub:'四半期セッション', title:'Road to Chairman — 評価アンケート', step:'ステップ', banner:'続行する前に、右上隅で希望する言語を選択してください。', p0lbl:'はじめに', p0title:'地域を選択してください', p0q:'あなたが属する地域はどれですか？', regions:['APAC（中国を除くアジア太平洋）','中国','E&A（欧州・中東・アフリカ）','EM（ユーラシア市場）','インド','メキシコ','SAMCAM/ブラジル','その他（詳細を記入）'], other_ph:'詳細を記入してください...', next:'次へ →', back:'← 戻る', submit:'送信 ✓', footer:'回答は機密扱いとなり、今後のセッション改善のみに使用されます。', ai_note:'🤖 翻訳はAIによって生成されました · 不正確な点が含まれる場合があります', q:'質問', s1lbl:'セクション 1', s1title:'セッション満足度', s2lbl:'セクション 2', s2title:'Chairman への道の明確さ', s3lbl:'セクション 3', s3title:'改善のためのフィードバック', q1:'今回の四半期セッション全体について、どの程度満足しましたか？', q1o:['非常に満足','ある程度満足','どちらでもない','あまり満足していない','全く満足していない'], q2:'以下のセッション要素それぞれについて、どの程度満足しましたか？', sat:['非常に満足','満足','普通','不満','全く不満','N/A'], q2r:['Stephan Gratizianiとの会話','音声・映像品質','翻訳','全体の時間','コンテンツの質'], q3:"このセッション後、Chairman's Clubへの道筋はどの程度明確になりましたか？", q3o:['非常に明確 — 何をすべきか正確に分かる','かなり明確 — 良い方向性がある','ある程度明確 — まだ微調整が必要','あまり明確でない — いくつかの疑問が残る','全く明確でない — もっと指導が必要'], q4:'以下の各声明にどの程度同意しますか？', agr:['強く同意','同意','どちらでもない','同意しない','全く同意しない','N/A'], q4r:['"Road to Chairman"レポートがビジネス成長に役立つデータを提供してくれた','ライブコーチングが現在の課題と疑問に対応してくれた','このセッションで次の四半期に向けた明確なアクションを持って帰れる'], q5:'今回の四半期セッションで最も価値があった部分は何ですか？', q6:'次回の四半期セッションで変更または追加してほしいことは何ですか？', q7:'Road to Chairmanプログラムを組織の他のリーダーに推薦する可能性はどのくらいですか？', ta:'ここに回答を記入してください...', nlo:'全くあり得ない', nhi:'非常にあり得る', stitle:'ありがとうございました！', stext:'あなたのフィードバックはRoad to Chairmanプログラムの改善に不可欠です。', slabel:'アンケート完了', sval:'Road to Chairman · 四半期セッション' },
+
+  ko: { name:'한국어', sub:'분기별 세션', title:'Road to Chairman — 평가 설문', step:'단계', banner:'계속하기 전에 오른쪽 상단에서 선호하는 언어를 선택하세요.', p0lbl:'시작하기', p0title:'지역 선택', p0q:'어느 지역에 속하십니까?', regions:['APAC (중국 제외 아시아 태평양)','중국','E&A (유럽, 중동, 아프리카)','EM (유라시아 시장)','인도','멕시코','SAMCAM/브라질','기타 (명시해 주세요)'], other_ph:'명시해 주세요...', next:'다음 →', back:'← 이전', submit:'제출 ✓', footer:'귀하의 답변은 기밀이며 향후 세션 개선에만 사용됩니다.', ai_note:'🤖 번역은 AI로 생성되었습니다 · 부정확한 내용이 포함될 수 있습니다', q:'질문', s1lbl:'섹션 1', s1title:'세션 만족도', s2lbl:'섹션 2', s2title:"Chairman's Club 명확성", s3lbl:'섹션 3', s3title:'개선을 위한 피드백', q1:'전반적으로 이번 분기 세션에 얼마나 만족하셨습니까?', q1o:['매우 만족','다소 만족','만족도 불만족도 아님','다소 불만족','매우 불만족'], q2:'세션의 다음 각 요소에 얼마나 만족하셨습니까?', sat:['매우 만족','만족','보통','불만족','매우 불만족','해당없음'], q2r:['Stephan Gratiziani와의 대화','오디오/비디오 품질','번역','전체 시간','콘텐츠 품질'], q3:"이번 세션 후 Chairman's Club으로 가는 경로가 얼마나 명확합니까?", q3o:['매우 명확 — 무엇을 해야 할지 정확히 알고 있음','꽤 명확 — 좋은 방향이 있음','다소 명확 — 아직 몇 가지 조정이 필요함','그다지 명확하지 않음 — 여전히 질문이 있음','전혀 명확하지 않음 — 더 많은 지도가 필요함'], q4:'다음 진술에 얼마나 동의하거나 동의하지 않으십니까?', agr:['강력히 동의','동의','보통','동의하지 않음','강력히 동의하지 않음','해당없음'], q4r:['"Road to Chairman" 보고서가 비즈니스 성장에 유용한 데이터를 제공했음','라이브 코칭이 현재의 도전과 의문을 해결해 주었음','다음 분기를 위한 명확한 행동 계획을 가지고 세션을 마침'], q5:'이번 분기 세션에서 가장 가치 있었던 부분은 무엇입니까?', q6:'다음 분기 세션을 위해 무엇을 변경하거나 추가하고 싶으십니까?', q7:'Road to Chairman 프로그램을 조직의 다른 리더에게 추천할 가능성은 얼마나 됩니까?', ta:'여기에 답변을 작성하세요...', nlo:'전혀 그럴 것 같지 않음', nhi:'매우 그럴 것 같음', stitle:'감사합니다!', stext:'귀하의 피드백은 Road to Chairman 프로그램 개선에 핵심입니다.', slabel:'설문 완료', sval:'Road to Chairman · 분기별 세션' },
+
+  tr: { name:'Türkçe', sub:'Üç Aylık Oturum', title:'Road to Chairman — Değerlendirme Anketi', step:'Adım', banner:'Devam etmeden önce, sağ üst köşeden tercih ettiğiniz dili seçin.', p0lbl:'Başlarken', p0title:'Bölgenizi Seçin', p0q:'Hangi bölgeye aitsiniz?', regions:['APAC (Çin hariç Asya Pasifik)','Çin','E&A (Avrupa, Orta Doğu, Afrika)','EM (Avrasya Piyasaları)','Hindistan','Meksika','SAMCAM/Brezilya','Diğer (lütfen belirtin)'], other_ph:'Lütfen belirtin...', next:'İleri →', back:'← Geri', submit:'Gönder ✓', footer:'Yanıtlarınız gizlidir ve yalnızca gelecekteki oturumları iyileştirmek için kullanılacaktır.', ai_note:'🤖 Çeviriler yapay zeka ile oluşturuldu · Hatalar içerebilir', q:'Soru', s1lbl:'Bölüm 1', s1title:'Oturum Memnuniyeti', s2lbl:'Bölüm 2', s2title:"Chairman'a Giden Yolun Netliği", s3lbl:'Bölüm 3', s3title:'İyileştirme Geri Bildirimi', q1:'Genel olarak bu üç aylık oturumdan ne kadar memnun kaldınız?', q1o:['Çok memnun','Biraz memnun','Ne memnun ne memnuniyetsiz','Biraz memnuniyetsiz','Çok memnuniyetsiz'], q2:'Oturumun aşağıdaki her bir unsurundan ne kadar memnun kaldınız?', sat:['Çok Memnun','Memnun','Nötr','Memnuniyetsiz','Çok Memnuniyetsiz','Yok'], q2r:['Stephan Gratiziani ile Sohbet','Ses/Görüntü Kalitesi','Çeviriler','Genel Süre','İçerik Kalitesi'], q3:"Bu oturumun ardından Chairman's Club'a giden yolunuz ne kadar net?", q3o:['Çok net — ne yapacağımı tam olarak biliyorum','Oldukça net — iyi bir yönüm var','Biraz net — birkaç şeyi daha ince ayar yapmam gerekiyor','Pek net değil — hâlâ birkaç sorum var','Hiç net değil — daha fazla rehberliğe ihtiyacım var'], q4:'Aşağıdaki ifadelere ne kadar katılıyor ya da katılmıyorsunuz?', agr:['Kesinlikle Katılıyorum','Katılıyorum','Nötr','Katılmıyorum','Kesinlikle Katılmıyorum','Yok'], q4r:['"Road to Chairman" raporu işimi büyütmek için yararlı veriler sağladı','Canlı koçluk mevcut zorluklarımı ve şüphelerimi ele aldı','Bu oturumdan sonraki çeyrek için net eylemlerle ayrılıyorum'], q5:'Bu üç aylık oturumun en değerli kısmı neydi?', q6:'Bir sonraki üç aylık oturum için ne değiştirirdiniz ya da eklerdiniz?', q7:'Road to Chairman programını kuruluşunuzdaki başka bir lidere tavsiye etme olasılığınız nedir?', ta:'Cevabınızı buraya yazın...', nlo:'Hiç olası değil', nhi:'Son derece olası', stitle:'Teşekkür ederiz!', stext:'Geri bildiriminiz Road to Chairman programını geliştirmek için kritik öneme sahiptir.', slabel:'Anket tamamlandı', sval:'Road to Chairman · Üç Aylık Oturum' },
+
+  pl: { name:'Polski', sub:'Sesja Kwartalna', title:'Road to Chairman — Ankieta Oceniająca', step:'Krok', banner:'Zanim przejdziesz dalej, wybierz preferowany język w prawym górnym rogu.', p0lbl:'Na początek', p0title:'Wybierz swój region', p0q:'Do którego regionu należysz?', regions:['APAC (Azja-Pacyfik bez Chin)','Chiny','E&A (Europa, Bliski Wschód, Afryka)','EM (Rynki eurazjatyckie)','Indie','Meksyk','SAMCAM/Brazylia','Inne (podaj)'], other_ph:'Podaj...', next:'Dalej →', back:'← Wstecz', submit:'Wyślij ✓', footer:'Twoje odpowiedzi są poufne i zostaną użyte wyłącznie w celu poprawy przyszłych sesji.', ai_note:'🤖 Tłumaczenia wygenerowane przez AI · Mogą zawierać nieścisłości', q:'Pytanie', s1lbl:'Sekcja 1', s1title:'Satysfakcja z sesji', s2lbl:'Sekcja 2', s2title:'Jasność drogi do Chairman', s3lbl:'Sekcja 3', s3title:'Opinie dla poprawy', q1:'Ogólnie, jak bardzo byłeś/byłaś zadowolony/a z tej sesji kwartalnej?', q1o:['Bardzo zadowolony/a','Dość zadowolony/a','Ani zadowolony/a, ani niezadowolony/a','Dość niezadowolony/a','Bardzo niezadowolony/a'], q2:'Jak bardzo byłeś/byłaś zadowolony/a z każdego z następujących elementów sesji?', sat:['Bardzo zadowolony/a','Zadowolony/a','Neutralny','Niezadowolony/a','Bardzo niezadowolony/a','N/D'], q2r:['Rozmowa ze Stephanem Gratizianie','Jakość audio/wideo','Tłumaczenia','Całkowity czas trwania','Jakość treści'], q3:"Po tej sesji, jak jasna jest Twoja ścieżka do Chairman's Club?", q3o:['Bardzo jasna — dokładnie wiem, co robić','Dość jasna — mam dobry kierunek','Dość jasna — muszę jeszcze doprecyzować kilka rzeczy','Niezbyt jasna — mam jeszcze kilka pytań','Wcale nie jasna — potrzebuję więcej wskazówek'], q4:'W jakim stopniu zgadzasz się lub nie zgadzasz z poniższymi stwierdzeniami?', agr:['Zdecydowanie się zgadzam','Zgadzam się','Neutralny','Nie zgadzam się','Zdecydowanie się nie zgadzam','N/D'], q4r:['Raport "Road to Chairman" dostarczył przydatnych danych do rozwoju mojego biznesu','Coaching na żywo odpowiedział na moje aktualne wyzwania i wątpliwości','Wychodzę z tej sesji z jasnymi działaniami na następny kwartał'], q5:'Co było najcenniejszą częścią tej sesji kwartalnej?', q6:'Co byś zmienił/a lub dodał/a na następnej sesji kwartalnej?', q7:'Jakie jest prawdopodobieństwo, że polecisz program Road to Chairman innemu liderowi?', ta:'Napisz swoją odpowiedź tutaj...', nlo:'Bardzo mało prawdopodobne', nhi:'Niezwykle prawdopodobne', stitle:'Dziękujemy!', stext:'Twoja opinia jest kluczowa dla poprawy programu Road to Chairman.', slabel:'Ankieta ukończona', sval:'Road to Chairman · Sesja Kwartalna' },
+
+  uk: { name:'Українська', sub:'Квартальна сесія', title:'Road to Chairman — Оціночне опитування', step:'Крок', banner:'Перш ніж продовжити, виберіть бажану мову у верхньому правому куті.', p0lbl:'Початок', p0title:'Виберіть свій регіон', p0q:'До якого регіону ви належите?', regions:['APAC (Азіатсько-Тихоокеанський, крім Китаю)','Китай','E&A (Європа, Близький Схід, Африка)','EM (Євразійські ринки)','Індія','Мексика','SAMCAM/Бразилія','Інше (вкажіть)'], other_ph:'Вкажіть...', next:'Далі →', back:'← Назад', submit:'Надіслати ✓', footer:'Ваші відповіді конфіденційні та використовуватимуться лише для покращення майбутніх сесій.', ai_note:'🤖 Переклади створені за допомогою ШІ · Можуть містити неточності', q:'Питання', s1lbl:'Розділ 1', s1title:'Задоволеність сесією', s2lbl:'Розділ 2', s2title:'Чіткість шляху до Chairman', s3lbl:'Розділ 3', s3title:"Зворотній зв'язок для покращення", q1:'Загалом, наскільки ви задоволені цією квартальною сесією?', q1o:['Дуже задоволений/задоволена','Скоріше задоволений/задоволена','Ні задоволений, ні незадоволений','Скоріше незадоволений/незадоволена','Дуже незадоволений/незадоволена'], q2:'Наскільки ви задоволені кожним із наступних елементів сесії?', sat:['Дуже задоволений','Задоволений','Нейтрально','Незадоволений','Дуже незадоволений','Н/З'], q2r:['Розмова зі Stephan Gratiziani','Якість аудіо/відео','Переклади','Загальна тривалість','Якість контенту'], q3:"Наскільки чіткий ваш шлях до Chairman's Club після цієї сесії?", q3o:['Дуже чіткий — точно знаю, що робити','Досить чіткий — маю хороший напрямок','Певною мірою чіткий — ще треба налаштувати деталі','Не дуже чіткий — ще маю кілька питань','Зовсім нечіткий — потребую більше керівництва'], q4:'Наскільки ви погоджуєтесь або не погоджуєтесь з наступними твердженнями?', agr:['Повністю погоджуюсь','Погоджуюсь','Нейтрально','Не погоджуюсь','Категорично не погоджуюсь','Н/З'], q4r:['Звіт "Road to Chairman" надав корисні дані для розвитку мого бізнесу','Живий коучинг вирішив мої поточні виклики та сумніви','Виходжу із сесії з чіткими діями на наступний квартал'], q5:'Що було найціннішим у цій квартальній сесії?', q6:'Що б ви змінили або додали на наступній сесії?', q7:'Наскільки ймовірно, що ви порекомендуєте програму Road to Chairman іншому керівнику?', ta:'Напишіть свою відповідь тут...', nlo:'Зовсім не ймовірно', nhi:'Дуже ймовірно', stitle:'Дякуємо!', stext:"Ваш зворотній зв'язок є ключовим для покращення програми Road to Chairman.", slabel:'Опитування завершено', sval:'Road to Chairman · Квартальна сесія' },
+
+  cs: { name:'Čeština', sub:'Čtvrtletní sezení', title:'Road to Chairman — Hodnoticí průzkum', step:'Krok', banner:'Než budete pokračovat, vyberte prosím svůj preferovaný jazyk v pravém horním rohu.', p0lbl:'Začínáme', p0title:'Vyberte svůj region', p0q:'Do jakého regionu patříte?', regions:['APAC (Asie-Pacifik bez Číny)','Čína','E&A (Evropa, Střední východ, Afrika)','EM (Euroasijské trhy)','Indie','Mexiko','SAMCAM/Brazílie','Jiné (uveďte)'], other_ph:'Uveďte...', next:'Další →', back:'← Zpět', submit:'Odeslat ✓', footer:'Vaše odpovědi jsou důvěrné a budou použity pouze ke zlepšení budoucích sezení.', ai_note:'🤖 Překlady generované umělou inteligencí · Mohou obsahovat nepřesnosti', q:'Otázka', s1lbl:'Sekce 1', s1title:'Spokojenost se sezením', s2lbl:'Sekce 2', s2title:'Jasnost cesty k Chairmanovi', s3lbl:'Sekce 3', s3title:'Zpětná vazba pro zlepšení', q1:'Jak jste celkově spokojeni s tímto čtvrtletním sezením?', q1o:['Velmi spokojen/a','Poměrně spokojen/a','Ani spokojen/a, ani nespokojen/a','Poměrně nespokojen/a','Velmi nespokojen/a'], q2:'Jak jste spokojeni s každým z následujících prvků sezení?', sat:['Velmi spokojen/a','Spokojen/a','Neutrálně','Nespokojen/a','Velmi nespokojen/a','N/A'], q2r:['Rozhovor se Stephanem Gratizianie','Kvalita zvuku/videa','Překlady','Celková délka','Kvalita obsahu'], q3:"Jak jasná je vaše cesta do Chairman's Clubu po tomto sezení?", q3o:['Velmi jasná — přesně vím, co dělat','Poměrně jasná — mám dobrý směr','Poněkud jasná — ještě potřebuji doladit pár věcí','Není příliš jasná — stále mám otázky','Vůbec není jasná — potřebuji více vedení'], q4:'Do jaké míry souhlasíte nebo nesouhlasíte s následujícími tvrzeními?', agr:['Zcela souhlasím','Souhlasím','Neutrálně','Nesouhlasím','Zcela nesouhlasím','N/A'], q4r:['Zpráva "Road to Chairman" mi poskytla užitečná data pro rozvoj podnikání','Živé koučování řešilo mé aktuální výzvy a pochybnosti','Odcházím ze sezení s jasnými akcemi na příští čtvrtletí'], q5:'Co bylo nejcennější částí tohoto čtvrtletního sezení?', q6:'Co byste změnili nebo přidali na příštím čtvrtletním sezení?', q7:'Jak pravděpodobné je, že doporučíte program Road to Chairman jinému vedoucímu?', ta:'Sem napište svou odpověď...', nlo:'Vůbec nepravděpodobné', nhi:'Velmi pravděpodobné', stitle:'Děkujeme!', stext:'Vaše zpětná vazba je klíčová pro zlepšení programu Road to Chairman.', slabel:'Průzkum dokončen', sval:'Road to Chairman · Čtvrtletní sezení' },
+
+  sk: { name:'Slovenčina', sub:'Štvrťročné zasadnutie', title:'Road to Chairman — Hodnotiaci prieskum', step:'Krok', banner:'Skôr než budete pokračovať, vyberte si preferovaný jazyk v pravom hornom rohu.', p0lbl:'Začíname', p0title:'Vyberte svoj región', p0q:'Do akého regiónu patríte?', regions:['APAC (Ázia-Pacifik bez Číny)','Čína','E&A (Európa, Blízky východ, Afrika)','EM (Euroázijské trhy)','India','Mexiko','SAMCAM/Brazília','Iné (uveďte)'], other_ph:'Uveďte...', next:'Ďalej →', back:'← Späť', submit:'Odoslať ✓', footer:'Vaše odpovede sú dôverné a budú použité iba na zlepšenie budúcich zasadnutí.', ai_note:'🤖 Preklady generované umelou inteligenciou · Môžu obsahovať nepresnosti', q:'Otázka', s1lbl:'Sekcia 1', s1title:'Spokojnosť so zasadnutím', s2lbl:'Sekcia 2', s2title:'Jasnosť cesty k Chairmanovi', s3lbl:'Sekcia 3', s3title:'Spätná väzba pre zlepšenie', q1:'Ako ste celkovo spokojní s týmto štvrťročným zasadnutím?', q1o:['Veľmi spokojný/á','Pomerne spokojný/á','Ani spokojný/á, ani nespokojný/á','Pomerne nespokojný/á','Veľmi nespokojný/á'], q2:'Ako ste spokojní s každým z nasledujúcich prvkov zasadnutia?', sat:['Veľmi spokojný/á','Spokojný/á','Neutrálne','Nespokojný/á','Veľmi nespokojný/á','N/A'], q2r:['Rozhovor so Stephanom Gratizianie','Kvalita zvuku/videa','Preklady','Celková dĺžka','Kvalita obsahu'], q3:"Aká jasná je vaša cesta do Chairman's Clubu po tomto zasadnutí?", q3o:['Veľmi jasná — presne viem, čo robiť','Pomerne jasná — mám dobrý smer','Čiastočne jasná — ešte potrebujem doladiť niekoľko vecí','Nie veľmi jasná — stále mám otázky','Vôbec nie jasná — potrebujem viac vedenia'], q4:'Do akej miery súhlasíte alebo nesúhlasíte s nasledujúcimi tvrdeniami?', agr:['Úplne súhlasím','Súhlasím','Neutrálne','Nesúhlasím','Úplne nesúhlasím','N/A'], q4r:['Správa "Road to Chairman" poskytla užitočné údaje pre rast môjho podnikania','Živé koučovanie riešilo moje aktuálne výzvy a pochybnosti','Odchádzam zo zasadnutia s jasnými akciami na ďalší štvrťrok'], q5:'Čo bolo najcennejšou časťou tohto štvrťročného zasadnutia?', q6:'Čo by ste zmenili alebo pridali na ďalšom štvrťročnom zasadnutí?', q7:'Aká je pravdepodobnosť, že odporučíte program Road to Chairman inému vedúcemu?', ta:'Napíšte svoju odpoveď tu...', nlo:'Vôbec nepravdepodobné', nhi:'Veľmi pravdepodobné', stitle:'Ďakujeme!', stext:'Vaša spätná väzba je kľúčová pre zlepšenie programu Road to Chairman.', slabel:'Prieskum dokončený', sval:'Road to Chairman · Štvrťročné zasadnutie' },
+
+  ro: { name:'Română', sub:'Sesiune Trimestrială', title:'Road to Chairman — Sondaj de Evaluare', step:'Pas', banner:'Înainte de a continua, te rugăm să selectezi limba preferată în colțul din dreapta sus.', p0lbl:'Începeți', p0title:'Selectați regiunea dvs.', p0q:'Din ce regiune faceți parte?', regions:['APAC (Asia-Pacific excl. China)','China','E&A (Europa, Orientul Mijlociu, Africa)','EM (Piețe Eurasiatice)','India','Mexic','SAMCAM/Brazilia','Altele (specificați)'], other_ph:'Specificați...', next:'Următorul →', back:'← Înapoi', submit:'Trimiteți ✓', footer:'Răspunsurile dvs. sunt confidențiale și vor fi folosite doar pentru îmbunătățirea sesiunilor viitoare.', ai_note:'🤖 Traduceri generate de AI · Pot conține inexactități', q:'Întrebare', s1lbl:'Secțiunea 1', s1title:'Satisfacția față de sesiune', s2lbl:'Secțiunea 2', s2title:'Claritatea drumului spre Chairman', s3lbl:'Secțiunea 3', s3title:'Feedback pentru îmbunătățire', q1:'În general, cât de mulțumit(ă) ați fost de această sesiune trimestrială?', q1o:['Foarte mulțumit(ă)','Oarecum mulțumit(ă)','Nici mulțumit(ă), nici nemulțumit(ă)','Oarecum nemulțumit(ă)','Foarte nemulțumit(ă)'], q2:'Cât de mulțumit(ă) ați fost de fiecare dintre elementele sesiunii?', sat:['Foarte mulțumit(ă)','Mulțumit(ă)','Neutru','Nemulțumit(ă)','Foarte nemulțumit(ă)','N/A'], q2r:['Conversație cu Stephan Gratiziani','Calitatea audio/video','Traduceri','Durata totală','Calitatea conținutului'], q3:"Cât de clar este drumul dvs. spre Chairman's Club după această sesiune?", q3o:['Foarte clar — știu exact ce trebuie să fac','Destul de clar — am o direcție bună','Oarecum clar — mai am de ajustat câteva lucruri','Nu prea clar — am încă câteva întrebări','Deloc clar — am nevoie de mai multă îndrumare'], q4:'Cât de mult sunteți de acord sau dezacord cu următoarele afirmații?', agr:['Complet de acord','De acord','Neutru','Dezacord','Total dezacord','N/A'], q4r:['Raportul "Road to Chairman" mi-a oferit date utile pentru creșterea afacerii','Coaching-ul live mi-a abordat provocările și îndoielile actuale','Plec de la sesiune cu acțiuni clare pentru trimestrul următor'], q5:'Care a fost cea mai valoroasă parte a acestei sesiuni trimestriale?', q6:'Ce ați schimba sau adăuga la următoarea sesiune trimestrială?', q7:'Cât de probabil este să recomandați programul Road to Chairman unui alt lider?', ta:'Scrieți răspunsul dvs. aici...', nlo:'Deloc probabil', nhi:'Extrem de probabil', stitle:'Vă mulțumim!', stext:'Feedback-ul dvs. este esențial pentru îmbunătățirea programului Road to Chairman.', slabel:'Sondaj completat', sval:'Road to Chairman · Sesiune Trimestrială' },
+
+  hi: { name:'हिन्दी', sub:'त्रैमासिक सत्र', title:'Road to Chairman — मूल्यांकन सर्वेक्षण', step:'चरण', banner:'आगे बढ़ने से पहले, कृपया ऊपर दाएँ कोने में अपनी पसंदीदा भाषा चुनें।', p0lbl:'शुरुआत', p0title:'अपना क्षेत्र चुनें', p0q:'आप किस क्षेत्र से संबंधित हैं?', regions:['APAC (चीन को छोड़कर एशिया प्रशांत)','चीन','E&A (यूरोप, मध्य पूर्व, अफ्रीका)','EM (यूरेशियाई बाजार)','भारत','मेक्सिको','SAMCAM/ब्राजील','अन्य (कृपया बताएं)'], other_ph:'कृपया बताएं...', next:'आगे →', back:'← पीछे', submit:'सबमिट करें ✓', footer:'आपके उत्तर गोपनीय हैं और केवल भविष्य के सत्रों को बेहतर बनाने के लिए उपयोग किए जाएंगे।', ai_note:'🤖 अनुवाद AI द्वारा उत्पन्न · इनमें अशुद्धियाँ हो सकती हैं', q:'प्रश्न', s1lbl:'खंड 1', s1title:'सत्र संतुष्टि', s2lbl:'खंड 2', s2title:'Chairman तक के रास्ते की स्पष्टता', s3lbl:'खंड 3', s3title:'सुधार के लिए प्रतिक्रिया', q1:'कुल मिलाकर, आप इस त्रैमासिक सत्र से कितने संतुष्ट थे?', q1o:['बहुत संतुष्ट','कुछ हद तक संतुष्ट','न संतुष्ट न असंतुष्ट','कुछ हद तक असंतुष्ट','बहुत असंतुष्ट'], q2:'सत्र के निम्नलिखित प्रत्येक तत्व से आप कितने संतुष्ट थे?', sat:['बहुत संतुष्ट','संतुष्ट','तटस्थ','असंतुष्ट','बहुत असंतुष्ट','लागू नहीं'], q2r:['Stephan Gratiziani के साथ बातचीत','ऑडियो/वीडियो गुणवत्ता','अनुवाद','कुल अवधि','सामग्री की गुणवत्ता'], q3:"इस सत्र के बाद, Chairman's Club तक आपका रास्ता कितना स्पष्ट है?", q3o:['बहुत स्पष्ट — मैं जानता/जानती हूं कि क्या करना है','काफी स्पष्ट — मेरे पास एक अच्छी दिशा है','कुछ हद तक स्पष्ट — मुझे अभी भी कुछ चीजें ठीक करनी हैं','बहुत स्पष्ट नहीं — मेरे पास अभी भी कई प्रश्न हैं','बिल्कुल स्पष्ट नहीं — मुझे अधिक मार्गदर्शन की आवश्यकता है'], q4:'आप निम्नलिखित कथनों से कितना सहमत या असहमत हैं?', agr:['पूरी तरह सहमत','सहमत','तटस्थ','असहमत','बिल्कुल असहमत','लागू नहीं'], q4r:['"Road to Chairman" रिपोर्ट ने मुझे व्यवसाय बढ़ाने के लिए उपयोगी डेटा दिया','लाइव कोचिंग ने मेरी वर्तमान चुनौतियों और संदेहों को संबोधित किया','मैं इस सत्र से अगली तिमाही के लिए स्पष्ट कार्यों के साथ जा रहा/जा रही हूं'], q5:'इस त्रैमासिक सत्र का सबसे मूल्यवान हिस्सा क्या था?', q6:'अगले त्रैमासिक सत्र के लिए आप क्या बदलेंगे या जोड़ेंगे?', q7:'आप Road to Chairman कार्यक्रम को अपने संगठन के किसी अन्य नेता को सुझाने की कितनी संभावना है?', ta:'यहाँ अपना उत्तर लिखें...', nlo:'बिल्कुल संभव नहीं', nhi:'अत्यंत संभावित', stitle:'धन्यवाद!', stext:'आपकी प्रतिक्रिया Road to Chairman कार्यक्रम को बेहतर बनाने की कुंजी है।', slabel:'सर्वेक्षण पूर्ण', sval:'Road to Chairman · त्रैमासिक सत्र' },
+
+  hu: { name:'Magyar', sub:'Negyedéves munkamenet', title:'Road to Chairman — Értékelő felmérés', step:'Lépés', banner:'Mielőtt folytatná, kérjük, válassza ki a kívánt nyelvet a jobb felső sarokban.', p0lbl:'Kezdés', p0title:'Válassza ki a régióját', p0q:'Melyik régióhoz tartozik?', regions:['APAC (Ázsia-Csendes-óceán, Kína nélkül)','Kína','E&A (Európa, Közel-Kelet, Afrika)','EM (Eurázsiai piacok)','India','Mexikó','SAMCAM/Brazília','Egyéb (kérem adja meg)'], other_ph:'Kérem adja meg...', next:'Következő →', back:'← Vissza', submit:'Küldés ✓', footer:'Válaszai bizalmasak, és kizárólag a jövőbeli munkamenetek javítására szolgálnak.', ai_note:'🤖 Fordítások mesterséges intelligenciával készültek · Pontatlanságokat tartalmazhatnak', q:'Kérdés', s1lbl:'1. szakasz', s1title:'Munkamenet elégedettség', s2lbl:'2. szakasz', s2title:'A Chairman felé vezető út világossága', s3lbl:'3. szakasz', s3title:'Visszajelzés a fejlesztéshez', q1:'Összességében mennyire volt elégedett ezzel a negyedéves munkamenettel?', q1o:['Nagyon elégedett','Kissé elégedett','Se elégedett, se elégedetlen','Kissé elégedetlen','Nagyon elégedetlen'], q2:'Mennyire volt elégedett a munkamenet következő elemeivel?', sat:['Nagyon elégedett','Elégedett','Semleges','Elégedetlen','Nagyon elégedetlen','N/A'], q2r:['Stephan Gratizianie-val való beszélgetés','Hang-/Videóminőség','Fordítások','Teljes időtartam','Tartalom minősége'], q3:"E munkamenet után mennyire egyértelmű az útja a Chairman's Club felé?", q3o:['Nagyon egyértelmű — pontosan tudom, mit kell tenni','Elég egyértelmű — jó irányom van','Valamennyire egyértelmű — még finomítani kell néhány dolgot','Nem nagyon egyértelmű — még vannak kérdéseim','Egyáltalán nem egyértelmű — több iránymutatásra van szükségem'], q4:'Mennyire ért egyet vagy nem ért egyet a következő állításokkal?', agr:['Teljesen egyetértek','Egyetértek','Semleges','Nem értek egyet','Egyáltalán nem értek egyet','N/A'], q4r:['A "Road to Chairman" jelentés hasznos adatokat adott üzletem növeléséhez','Az élő coaching kezelte jelenlegi kihívásaimat és kételyeimet','Ebből a munkamenetből egyértelmű cselekvési tervvel távozom a következő negyedévre'], q5:'Mi volt ennek a negyedéves munkamenetnek a legértékesebb része?', q6:'Mit változtatna meg vagy adna hozzá a következő negyedéves munkamenethez?', q7:'Mennyire valószínű, hogy ajánlaná a Road to Chairman programot egy másik vezető számára?', ta:'Írja ide válaszát...', nlo:'Egyáltalán nem valószínű', nhi:'Rendkívül valószínű', stitle:'Köszönjük!', stext:'Visszajelzése kulcsfontosságú a Road to Chairman program fejlesztéséhez.', slabel:'Felmérés befejezve', sval:'Road to Chairman · Negyedéves munkamenet' },
+
+  id: { name:'Bahasa Indonesia', sub:'Sesi Kuartalan', title:'Road to Chairman — Survei Evaluasi', step:'Langkah', banner:'Sebelum melanjutkan, silakan pilih bahasa pilihan Anda di sudut kanan atas.', p0lbl:'Mulai', p0title:'Pilih Wilayah Anda', p0q:'Wilayah mana yang Anda ikuti?', regions:['APAC (Asia Pasifik kecuali China)','China','E&A (Eropa, Timur Tengah, Afrika)','EM (Pasar Eurasia)','India','Meksiko','SAMCAM/Brasil','Lainnya (harap tentukan)'], other_ph:'Harap tentukan...', next:'Berikutnya →', back:'← Kembali', submit:'Kirim ✓', footer:'Jawaban Anda bersifat rahasia dan hanya akan digunakan untuk meningkatkan sesi mendatang.', ai_note:'🤖 Terjemahan dihasilkan oleh AI · Mungkin mengandung ketidakakuratan', q:'Pertanyaan', s1lbl:'Bagian 1', s1title:'Kepuasan Sesi', s2lbl:'Bagian 2', s2title:'Kejelasan Jalan Menuju Chairman', s3lbl:'Bagian 3', s3title:'Umpan Balik untuk Perbaikan', q1:'Secara keseluruhan, seberapa puas Anda dengan sesi kuartalan ini?', q1o:['Sangat puas','Cukup puas','Tidak puas maupun tidak puas','Cukup tidak puas','Sangat tidak puas'], q2:'Seberapa puas Anda dengan setiap elemen sesi berikut ini?', sat:['Sangat Puas','Puas','Netral','Tidak Puas','Sangat Tidak Puas','T/A'], q2r:['Percakapan dengan Stephan Gratiziani','Kualitas Audio/Visual','Terjemahan','Durasi Keseluruhan','Kualitas Konten'], q3:"Setelah sesi ini, seberapa jelas jalur Anda menuju Chairman's Club?", q3o:['Sangat jelas — saya tahu persis apa yang harus dilakukan','Cukup jelas — saya memiliki arah yang baik','Agak jelas — masih perlu menyesuaikan beberapa hal','Tidak terlalu jelas — saya masih memiliki beberapa pertanyaan','Sama sekali tidak jelas — saya butuh lebih banyak bimbingan'], q4:'Seberapa setuju atau tidak setuju Anda dengan pernyataan berikut?', agr:['Sangat Setuju','Setuju','Netral','Tidak Setuju','Sangat Tidak Setuju','T/A'], q4r:['Laporan "Road to Chairman" memberi data berguna untuk mengembangkan bisnis','Coaching langsung membahas tantangan dan keraguan saya saat ini','Saya meninggalkan sesi ini dengan tindakan yang jelas untuk kuartal berikutnya'], q5:'Apa bagian paling berharga dari sesi kuartalan ini?', q6:'Apa yang akan Anda ubah atau tambahkan untuk sesi kuartalan berikutnya?', q7:'Seberapa mungkin Anda merekomendasikan program Road to Chairman kepada pemimpin lain?', ta:'Tulis jawaban Anda di sini...', nlo:'Sama sekali tidak mungkin', nhi:'Sangat mungkin', stitle:'Terima kasih!', stext:'Masukan Anda sangat penting untuk meningkatkan program Road to Chairman.', slabel:'Survei selesai', sval:'Road to Chairman · Sesi Kuartalan' },
+
+  ms: { name:'Bahasa Melayu', sub:'Sesi Suku Tahunan', title:'Road to Chairman — Kaji Selidik Penilaian', step:'Langkah', banner:'Sebelum anda meneruskan, sila pilih bahasa pilihan anda di sudut kanan atas.', p0lbl:'Bermula', p0title:'Pilih Rantau Anda', p0q:'Rantau manakah anda tergolong?', regions:['APAC (Asia Pasifik kecuali China)','China','E&A (Eropah, Timur Tengah, Afrika)','EM (Pasaran Eurasia)','India','Mexico','SAMCAM/Brazil','Lain-lain (sila nyatakan)'], other_ph:'Sila nyatakan...', next:'Seterusnya →', back:'← Kembali', submit:'Hantar ✓', footer:'Jawapan anda adalah sulit dan hanya akan digunakan untuk memperbaiki sesi masa hadapan.', ai_note:'🤖 Terjemahan dijana dengan AI · Mungkin mengandungi ketidaktepatan', q:'Soalan', s1lbl:'Bahagian 1', s1title:'Kepuasan Sesi', s2lbl:'Bahagian 2', s2title:'Kejelasan Jalan Menuju Chairman', s3lbl:'Bahagian 3', s3title:'Maklum Balas untuk Penambahbaikan', q1:'Secara keseluruhannya, sejauh mana anda berpuas hati dengan sesi suku tahunan ini?', q1o:['Sangat berpuas hati','Agak berpuas hati','Tidak berpuas hati mahupun tidak berpuas hati','Agak tidak berpuas hati','Sangat tidak berpuas hati'], q2:'Sejauh mana anda berpuas hati dengan setiap elemen sesi berikut?', sat:['Sangat Berpuas Hati','Berpuas Hati','Neutral','Tidak Berpuas Hati','Sangat Tidak Berpuas Hati','T/B'], q2r:['Perbualan dengan Stephan Gratiziani','Kualiti Audio/Visual','Terjemahan','Tempoh Keseluruhan','Kualiti Kandungan'], q3:"Selepas sesi ini, sejauh mana jelas laluan anda ke Chairman's Club?", q3o:['Sangat jelas — saya tahu dengan tepat apa yang perlu dilakukan','Cukup jelas — saya mempunyai hala tuju yang baik','Agak jelas — masih perlu melaraskan beberapa perkara','Kurang jelas — saya masih mempunyai beberapa soalan','Langsung tidak jelas — saya memerlukan lebih banyak bimbingan'], q4:'Sejauh mana anda bersetuju atau tidak bersetuju dengan kenyataan berikut?', agr:['Sangat Bersetuju','Bersetuju','Neutral','Tidak Bersetuju','Sangat Tidak Bersetuju','T/B'], q4r:['Laporan "Road to Chairman" memberi data berguna untuk mengembangkan perniagaan','Coaching langsung menangani cabaran dan keraguan semasa saya','Saya meninggalkan sesi ini dengan tindakan yang jelas untuk suku berikutnya'], q5:'Apakah bahagian paling berharga dalam sesi suku tahunan ini?', q6:'Apa yang anda akan ubah atau tambah untuk sesi suku tahunan seterusnya?', q7:'Sejauh mana anda mungkin mengesyorkan program Road to Chairman kepada pemimpin lain?', ta:'Tulis jawapan anda di sini...', nlo:'Langsung tidak mungkin', nhi:'Sangat mungkin', stitle:'Terima kasih!', stext:'Maklum balas anda adalah kunci untuk meningkatkan program Road to Chairman.', slabel:'Kaji selidik selesai', sval:'Road to Chairman · Sesi Suku Tahunan' },
+
+  ta: { name:'தமிழ்', sub:'காலாண்டு அமர்வு', title:'Road to Chairman — மதிப்பீட்டு கணக்கெடுப்பு', step:'படி', banner:'தொடருவதற்கு முன், மேல்புற வலது மூலையில் உங்கள் விருப்பமான மொழியைத் தேர்ந்தெடுக்கவும்.', p0lbl:'தொடங்குதல்', p0title:'உங்கள் பிராந்தியத்தைத் தேர்ந்தெடுக்கவும்', p0q:'நீங்கள் எந்த பிராந்தியத்தைச் சேர்ந்தவர்?', regions:['APAC (சீனா தவிர ஆசியா பசிபிக்)','சீனா','E&A (ஐரோப்பா, மத்திய கிழக்கு, ஆப்பிரிக்கா)','EM (யூரேசிய சந்தைகள்)','இந்தியா','மெக்சிகோ','SAMCAM/பிரேசில்','மற்றவை (குறிப்பிடவும்)'], other_ph:'குறிப்பிடவும்...', next:'அடுத்து →', back:'← திரும்பு', submit:'சமர்ப்பி ✓', footer:'உங்கள் பதில்கள் இரகசியமானவை மற்றும் எதிர்கால அமர்வுகளை மேம்படுத்துவதற்கு மட்டுமே பயன்படுத்தப்படும்.', ai_note:'🤖 மொழிபெயர்ப்புகள் AI மூலம் உருவாக்கப்பட்டன · துல்லியமற்ற தகவல்கள் இருக்கலாம்', q:'கேள்வி', s1lbl:'பிரிவு 1', s1title:'அமர்வு திருப்தி', s2lbl:'பிரிவு 2', s2title:'Chairman வழியின் தெளிவு', s3lbl:'பிரிவு 3', s3title:'மேம்பாட்டிற்கான கருத்து', q1:'மொத்தத்தில், இந்த காலாண்டு அமர்வில் நீங்கள் எவ்வளவு திருப்தியாக இருந்தீர்கள்?', q1o:['மிகவும் திருப்தி','சற்று திருப்தி','திருப்தியும் இல்லை, அதிருப்தியும் இல்லை','சற்று அதிருப்தி','மிகவும் அதிருப்தி'], q2:'அமர்வின் பின்வரும் ஒவ்வொரு கூறிலும் நீங்கள் எவ்வளவு திருப்தியாக இருந்தீர்கள்?', sat:['மிகவும் திருப்தி','திருப்தி','நடுநிலை','அதிருப்தி','மிகவும் அதிருப்தி','பொருந்தாது'], q2r:['Stephan Gratiziani உடனான உரையாடல்','ஆடியோ/வீடியோ தரம்','மொழிபெயர்ப்புகள்','மொத்த காலம்','உள்ளடக்க தரம்'], q3:"இந்த அமர்வுக்குப் பிறகு, Chairman's Club க்கான உங்கள் பாதை எவ்வளவு தெளிவாக உள்ளது?", q3o:['மிகவும் தெளிவாக — என்ன செய்ய வேண்டும் என்று சரியாக தெரியும்','தகுந்த அளவில் தெளிவாக — நல்ல திசை உள்ளது','சற்று தெளிவாக — சில விஷயங்களை சரிப்படுத்த வேண்டும்','அதிக தெளிவில்லை — இன்னும் கேள்விகள் உள்ளன','சிறிதும் தெளிவில்லை — அதிக வழிகாட்டுதல் தேவை'], q4:'பின்வரும் கூற்றுகளுடன் நீங்கள் எவ்வளவு ஒப்புக்கொள்கிறீர்கள்?', agr:['முழுமையாக ஒப்புக்கொள்கிறேன்','ஒப்புக்கொள்கிறேன்','நடுநிலை','ஒப்புக்கொள்ளவில்லை','முழுவதும் எதிர்க்கிறேன்','பொருந்தாது'], q4r:['"Road to Chairman" அறிக்கை வணிகத்தை வளர்க்க பயனுள்ள தரவை அளித்தது','நேரடி பயிற்சி என் தற்போதைய சவால்களையும் சந்தேகங்களையும் தீர்த்தது','அடுத்த காலாண்டிற்கான தெளிவான நடவடிக்கைகளுடன் வெளியேறுகிறேன்'], q5:'இந்த காலாண்டு அமர்வில் மிக மதிப்புமிக்க பகுதி எது?', q6:'அடுத்த காலாண்டு அமர்விற்காக நீங்கள் என்ன மாற்றுவீர்கள் அல்லது சேர்ப்பீர்கள்?', q7:'Road to Chairman திட்டத்தை மற்றொரு தலைவருக்கு பரிந்துரைக்கும் வாய்ப்பு எவ்வளவு?', ta:'உங்கள் பதிலை இங்கே எழுதுங்கள்...', nlo:'சிறிதும் சாத்தியமில்லை', nhi:'மிகவும் சாத்தியம்', stitle:'நன்றி!', stext:'உங்கள் கருத்து Road to Chairman திட்டத்தை மேம்படுத்துவதற்கு முக்கியமானது.', slabel:'கணக்கெடுப்பு முடிந்தது', sval:'Road to Chairman · காலாண்டு அமர்வு' },
+
+  te: { name:'తెలుగు', sub:'త్రైమాసిక సెషన్', title:'Road to Chairman — మూల్యాంకన సర్వే', step:'దశ', banner:'కొనసాగించే ముందు, పై కుడి మూలలో మీకు ఇష్టమైన భాషను ఎంచుకోండి.', p0lbl:'ప్రారంభం', p0title:'మీ ప్రాంతాన్ని ఎంచుకోండి', p0q:'మీరు ఏ ప్రాంతానికి చెందినవారు?', regions:['APAC (చైనా మినహా ఆసియా పసిఫిక్)','చైనా','E&A (యూరప్, మధ్యప్రాచ్యం, ఆఫ్రికా)','EM (యూరేషియన్ మార్కెట్లు)','భారతదేశం','మెక్సికో','SAMCAM/బ్రెజిల్','ఇతర (దయచేసి పేర్కొనండి)'], other_ph:'దయచేసి పేర్కొనండి...', next:'తదుపరి →', back:'← వెనుకకు', submit:'సమర్పించు ✓', footer:'మీ సమాధానాలు గోప్యంగా ఉంటాయి మరియు భవిష్యత్ సెషన్లను మెరుగుపరచడానికి మాత్రమే ఉపయోగించబడతాయి.', ai_note:'🤖 అనువాదాలు AI ద్వారా రూపొందించబడ్డాయి · అచ్చుతప్పులు ఉండవచ్చు', q:'ప్రశ్న', s1lbl:'విభాగం 1', s1title:'సెషన్ సంతృప్తి', s2lbl:'విభాగం 2', s2title:'Chairman మార్గం యొక్క స్పష్టత', s3lbl:'విభాగం 3', s3title:'మెరుగుదల కోసం అభిప్రాయం', q1:'మొత్తంగా, ఈ త్రైమాసిక సెషన్‌తో మీరు ఎంత సంతృప్తిగా ఉన్నారు?', q1o:['చాలా సంతృప్తిగా','కొంచెం సంతృప్తిగా','సంతృప్తి కాదు అసంతృప్తి కాదు','కొంచెం అసంతృప్తిగా','చాలా అసంతృప్తిగా'], q2:'సెషన్ యొక్క కింది అంశాలలో ప్రతిదానితో మీరు ఎంత సంతృప్తిగా ఉన్నారు?', sat:['చాలా సంతృప్తి','సంతృప్తి','తటస్థంగా','అసంతృప్తి','చాలా అసంతృప్తి','వర్తించదు'], q2r:['Stephan Gratiziani తో సంభాషణ','ఆడియో/విజువల్ నాణ్యత','అనువాదాలు','మొత్తం వ్యవధి','కంటెంట్ నాణ్యత'], q3:"ఈ సెషన్ తర్వాత, Chairman's Club కి మీ మార్గం ఎంత స్పష్టంగా ఉంది?", q3o:['చాలా స్పష్టంగా — ఏమి చేయాలో నాకు ఖచ్చితంగా తెలుసు','చాలా స్పష్టంగా — నాకు మంచి దిశ ఉంది','కొంచెం స్పష్టంగా — ఇంకా కొన్ని విషయాలు సర్దుబాటు చేయాలి','అంత స్పష్టంగా లేదు — నాకు ఇంకా ప్రశ్నలు ఉన్నాయి','అస్సలు స్పష్టంగా లేదు — నాకు మరింత మార్గదర్శకత్వం అవసరం'], q4:'కింది ప్రకటనలతో మీరు ఎంత అంగీకరిస్తున్నారు?', agr:['గట్టిగా అంగీకరిస్తున్నాను','అంగీకరిస్తున్నాను','తటస్థంగా','విభేదిస్తున్నాను','గట్టిగా విభేదిస్తున్నాను','వర్తించదు'], q4r:['"Road to Chairman" నివేదిక నా వ్యాపారాన్ని పెంచుకోవడానికి ఉపయోగకరమైన డేటా ఇచ్చింది','లైవ్ కోచింగ్ నా ప్రస్తుత సవాళ్లు మరియు సందేహాలను పరిష్కరించింది','తదుపరి త్రైమాసికం కోసం స్పష్టమైన చర్యలతో సెషన్ నుండి వెళ్తున్నాను'], q5:'ఈ త్రైమాసిక సెషన్‌లో అత్యంత విలువైన భాగం ఏది?', q6:'తదుపరి త్రైమాసిక సెషన్ కోసం మీరు ఏమి మారుస్తారు లేదా జోడిస్తారు?', q7:'Road to Chairman కార్యక్రమాన్ని మరొక నాయకుడికి సిఫారసు చేసే అవకాశం ఎంత?', ta:'మీ సమాధానాన్ని ఇక్కడ రాయండి...', nlo:'అస్సలు సాధ్యం కాదు', nhi:'చాలా సాధ్యం', stitle:'ధన్యవాదాలు!', stext:'మీ అభిప్రాయం Road to Chairman కార్యక్రమాన్ని మెరుగుపరచడానికి కీలకమైనది.', slabel:'సర్వే పూర్తయింది', sval:'Road to Chairman · త్రైమాసిక సెషన్' },
+
+  kn: { name:'ಕನ್ನಡ', sub:'ತ್ರೈಮಾಸಿಕ ಅಧಿವೇಶನ', title:'Road to Chairman — ಮೌಲ್ಯಮಾಪನ ಸಮೀಕ್ಷೆ', step:'ಹಂತ', banner:'ಮುಂದುವರೆಯುವ ಮೊದಲು, ದಯವಿಟ್ಟು ಮೇಲಿನ ಬಲ ಮೂಲೆಯಲ್ಲಿ ನಿಮ್ಮ ಇಷ್ಟದ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.', p0lbl:'ಪ್ರಾರಂಭ', p0title:'ನಿಮ್ಮ ಪ್ರದೇಶ ಆಯ್ಕೆಮಾಡಿ', p0q:'ನೀವು ಯಾವ ಪ್ರದೇಶಕ್ಕೆ ಸೇರಿದ್ದೀರಿ?', regions:['APAC (ಚೀನಾ ಹೊರತುಪಡಿಸಿ ಏಷ್ಯಾ ಪೆಸಿಫಿಕ್)','ಚೀನಾ','E&A (ಯೂರೋಪ್, ಮಧ್ಯಪ್ರಾಚ್ಯ, ಆಫ್ರಿಕಾ)','EM (ಯುರೇಷಿಯನ್ ಮಾರುಕಟ್ಟೆಗಳು)','ಭಾರತ','ಮೆಕ್ಸಿಕೋ','SAMCAM/ಬ್ರೆಜಿಲ್','ಇತರೆ (ದಯವಿಟ್ಟು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ)'], other_ph:'ದಯವಿಟ್ಟು ನಿರ್ದಿಷ್ಟಪಡಿಸಿ...', next:'ಮುಂದೆ →', back:'← ಹಿಂದೆ', submit:'ಸಲ್ಲಿಸಿ ✓', footer:'ನಿಮ್ಮ ಉತ್ತರಗಳು ಗೌಪ್ಯವಾಗಿರುತ್ತವೆ ಮತ್ತು ಭವಿಷ್ಯದ ಅಧಿವೇಶನಗಳನ್ನು ಸುಧಾರಿಸಲು ಮಾತ್ರ ಬಳಸಲಾಗುವುದು.', ai_note:'🤖 ಅನುವಾದಗಳು AI ಮೂಲಕ ರಚಿಸಲ್ಪಟ್ಟಿವೆ · ನಿಖರತೆ ಕೊರತೆ ಇರಬಹುದು', q:'ಪ್ರಶ್ನೆ', s1lbl:'ವಿಭಾಗ 1', s1title:'ಅಧಿವೇಶನ ತೃಪ್ತಿ', s2lbl:'ವಿಭಾಗ 2', s2title:'Chairman ಮಾರ್ಗದ ಸ್ಪಷ್ಟತೆ', s3lbl:'ವಿಭಾಗ 3', s3title:'ಸುಧಾರಣೆಗಾಗಿ ಪ್ರತಿಕ್ರಿಯೆ', q1:'ಒಟ್ಟಾರೆ, ಈ ತ್ರೈಮಾಸಿಕ ಅಧಿವೇಶನದಿಂದ ನೀವು ಎಷ್ಟು ತೃಪ್ತರಾಗಿದ್ದೀರಿ?', q1o:['ತುಂಬಾ ತೃಪ್ತ','ಸ್ವಲ್ಪ ತೃಪ್ತ','ತೃಪ್ತನೂ ಇಲ್ಲ ಅತೃಪ್ತನೂ ಇಲ್ಲ','ಸ್ವಲ್ಪ ಅತೃಪ್ತ','ತುಂಬಾ ಅತೃಪ್ತ'], q2:'ಅಧಿವೇಶನದ ಕೆಳಗಿನ ಪ್ರತಿ ಅಂಶದಿಂದ ನೀವು ಎಷ್ಟು ತೃಪ್ತರಾಗಿದ್ದೀರಿ?', sat:['ತುಂಬಾ ತೃಪ್ತ','ತೃಪ್ತ','ತಟಸ್ಥ','ಅತೃಪ್ತ','ತುಂಬಾ ಅತೃಪ್ತ','ಅನ್ವಯಿಸುವುದಿಲ್ಲ'], q2r:['Stephan Gratiziani ಅವರೊಂದಿಗೆ ಸಂವಾದ','ಆಡಿಯೋ/ವಿಡಿಯೋ ಗುಣಮಟ್ಟ','ಅನುವಾದಗಳು','ಒಟ್ಟು ಅವಧಿ','ವಿಷಯದ ಗುಣಮಟ್ಟ'], q3:"ಈ ಅಧಿವೇಶನದ ನಂತರ, Chairman's Club ಗೆ ನಿಮ್ಮ ಮಾರ್ಗ ಎಷ್ಟು ಸ್ಪಷ್ಟವಾಗಿದೆ?", q3o:['ತುಂಬಾ ಸ್ಪಷ್ಟ — ಏನು ಮಾಡಬೇಕೆಂದು ನಿಖರವಾಗಿ ತಿಳಿದಿದೆ','ಸಾಕಷ್ಟು ಸ್ಪಷ್ಟ — ಉತ್ತಮ ದಿಕ್ಕು ಇದೆ','ಸ್ವಲ್ಪ ಸ್ಪಷ್ಟ — ಇನ್ನೂ ಕೆಲವು ಸರಿಪಡಿಸಬೇಕು','ಅಷ್ಟೊಂದು ಸ್ಪಷ್ಟವಿಲ್ಲ — ಇನ್ನೂ ಪ್ರಶ್ನೆಗಳಿವೆ','ಸ್ಪಷ್ಟವೇ ಇಲ್ಲ — ಹೆಚ್ಚಿನ ಮಾರ್ಗದರ್ಶನ ಬೇಕು'], q4:'ಕೆಳಗಿನ ಹೇಳಿಕೆಗಳೊಂದಿಗೆ ನೀವು ಎಷ್ಟು ಒಪ್ಪುತ್ತೀರಿ?', agr:['ಸಂಪೂರ್ಣ ಒಪ್ಪಿಗೆ','ಒಪ್ಪಿಗೆ','ತಟಸ್ಥ','ಒಪ್ಪದಿರುವಿಕೆ','ಸಂಪೂರ್ಣ ಒಪ್ಪದಿರುವಿಕೆ','ಅನ್ವಯಿಸುವುದಿಲ್ಲ'], q4r:['"Road to Chairman" ವರದಿ ವ್ಯವಹಾರ ಬೆಳೆಸಲು ಉಪಯೋಗಿ ಡೇಟಾ ನೀಡಿತು','ನೇರ ತರಬೇತಿ ಸವಾಲುಗಳು ಮತ್ತು ಸಂದೇಹಗಳನ್ನು ಪರಿಹರಿಸಿತು','ಮುಂದಿನ ತ್ರೈಮಾಸಿಕಕ್ಕಾಗಿ ಸ್ಪಷ್ಟ ಕ್ರಿಯೆಗಳೊಂದಿಗೆ ಅಧಿವೇಶನ ಬಿಡುತ್ತಿದ್ದೇನೆ'], q5:'ಈ ತ್ರೈಮಾಸಿಕ ಅಧಿವೇಶನದ ಅತ್ಯಂತ ಮೌಲ್ಯಯುತ ಭಾಗ ಯಾವುದು?', q6:'ಮುಂದಿನ ಅಧಿವೇಶನಕ್ಕಾಗಿ ನೀವು ಏನು ಬದಲಾಯಿಸುತ್ತೀರಿ ಅಥವಾ ಸೇರಿಸುತ್ತೀರಿ?', q7:'Road to Chairman ಕಾರ್ಯಕ್ರಮವನ್ನು ಇನ್ನೊಬ್ಬ ನಾಯಕರಿಗೆ ಶಿಫಾರಸು ಮಾಡುವ ಸಾಧ್ಯತೆ ಎಷ್ಟು?', ta:'ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಇಲ್ಲಿ ಬರೆಯಿರಿ...', nlo:'ಸಾಧ್ಯವೇ ಇಲ್ಲ', nhi:'ಅತ್ಯಂತ ಸಾಧ್ಯ', stitle:'ಧನ್ಯವಾದಗಳು!', stext:'ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆ Road to Chairman ಕಾರ್ಯಕ್ರಮವನ್ನು ಸುಧಾರಿಸಲು ಮಹತ್ವಪೂರ್ಣವಾಗಿದೆ.', slabel:'ಸಮೀಕ್ಷೆ ಪೂರ್ಣಗೊಂಡಿದೆ', sval:'Road to Chairman · ತ್ರೈಮಾಸಿಕ ಅಧಿವೇಶನ' },
+
+  ml: { name:'മലയാളം', sub:'ത്രൈമാസ സെഷൻ', title:'Road to Chairman — മൂല്യനിർണ്ണയ സർവേ', step:'ഘട്ടം', banner:'തുടരുന്നതിന് മുമ്പ്, മുകളിൽ വലതുവശത്തെ മൂലയിലുള്ള നിങ്ങളുടെ ഇഷ്ടഭാഷ തിരഞ്ഞെടുക്കുക.', p0lbl:'ആരംഭം', p0title:'നിങ്ങളുടെ മേഖല തിരഞ്ഞെടുക്കുക', p0q:'നിങ്ങൾ ഏത് മേഖലയിൽ ഉൾപ്പെടുന്നു?', regions:['APAC (ചൈന ഒഴികെ ഏഷ്യ പസഫിക്)','ചൈന','E&A (യൂറോപ്പ്, മിഡിൽ ഈസ്റ്റ്, ആഫ്രിക്ക)','EM (യൂറേഷ്യൻ മാർക്കറ്റുകൾ)','ഇന്ത്യ','മെക്സിക്കോ','SAMCAM/ബ്രസീൽ','മറ്റുള്ളവ (ദയവായി നിർദ്ദിഷ്ടമാക്കുക)'], other_ph:'ദയവായി നിർദ്ദിഷ്ടമാക്കുക...', next:'അടുത്തത് →', back:'← തിരികെ', submit:'സമർപ്പിക്കുക ✓', footer:'നിങ്ങളുടെ ഉത്തരങ്ങൾ രഹസ്യമാണ്, ഭാവി സെഷനുകൾ മെച്ചപ്പെടുത്തുന്നതിന് മാത്രം ഉപയോഗിക്കും.', ai_note:'🤖 പരിഭാഷകൾ AI ഉപയോഗിച്ച് സൃഷ്ടിച്ചു · അക്കുറ്റ്ങ്ങൾ ഉൾക്കൊള്ളാം', q:'ചോദ്യം', s1lbl:'വിഭാഗം 1', s1title:'സെഷൻ സംതൃപ്തി', s2lbl:'വിഭാഗം 2', s2title:'Chairman മാർഗ്ഗത്തിന്റെ വ്യക്തത', s3lbl:'വിഭാഗം 3', s3title:'മെച്ചപ്പെടുത്തലിനുള്ള ഫീഡ്ബാക്ക്', q1:'മൊത്തത്തിൽ, ഈ ത്രൈമാസ സെഷനിൽ നിങ്ങൾ എത്രത്തോളം സംതൃപ്തരായിരുന്നു?', q1o:['വളരെ സംതൃപ്തി','ഒരു പരിധിവരെ സംതൃപ്തി','സംതൃപ്തിയോ അസംതൃപ്തിയോ ഇല്ല','ഒരു പരിധിവരെ അസംതൃപ്തി','വളരെ അസംതൃപ്തി'], q2:'സെഷന്റെ ഓരോ ഘടകത്തിലും നിങ്ങൾ എത്രത്തോളം സംതൃപ്തരായിരുന്നു?', sat:['വളരെ സംതൃപ്തി','സംതൃപ്തി','നിഷ്പക്ഷം','അസംതൃപ്തി','വളരെ അസംതൃപ്തി','ബാധകമല്ല'], q2r:['Stephan Gratiziani യുമായുള്ള സംഭാഷണം','ഓഡിയോ/വീഡിയോ ഗുണനിലവാരം','വിവർത്തനങ്ങൾ','മൊത്തം ദൈർഘ്യം','ഉള്ളടക്ക ഗുണനിലവാരം'], q3:"ഈ സെഷനുശേഷം, Chairman's Club ലേക്കുള്ള നിങ്ങളുടെ പാത എത്ര വ്യക്തമാണ്?", q3o:['വളരെ വ്യക്തം — ഞാൻ എന്ത് ചെയ്യണം എന്ന് കൃത്യമായി അറിയാം','തക്കവണ്ണം വ്യക്തം — നല്ല ദിശ ഉണ്ട്','ഒരു പരിധിവരെ വ്യക്തം — ചില കാര്യങ്ങൾ ഇനിയും ശരിയാക്കണം','അത്ര വ്യക്തമല്ല — ഇനിയും ചോദ്യങ്ങൾ ഉണ്ട്','ഒട്ടും വ്യക്തമല്ല — കൂടുതൽ മാർഗ്ഗനിർദ്ദേശം ആവശ്യം'], q4:'ഇനിപ്പറയുന്ന പ്രസ്താവനകളോട് നിങ്ങൾ എത്രമാത്രം യോജിക്കുന്നു?', agr:['ശക്തമായി യോജിക്കുന്നു','യോജിക്കുന്നു','നിഷ്പക്ഷം','യോജിക്കുന്നില്ല','ശക്തമായി വിയോജിക്കുന്നു','ബാധകമല്ല'], q4r:['"Road to Chairman" റിപ്പോർട്ട് ബിസിനസ് വളർത്താൻ ഉപകാരപ്രദമായ ഡേറ്റ നൽകി','ലൈവ് കോച്ചിംഗ് നിലവിലെ വെല്ലുവിളികളും സംശയങ്ങളും പരിഹരിച്ചു','അടുത്ത പാദത്തിനുള്ള വ്യക്തമായ നടപടികളുമായി ഈ സെഷൻ വിടുന്നു'], q5:'ഈ ത്രൈമാസ സെഷന്റെ ഏറ്റവും മൂല്യവത്തായ ഭാഗം ഏതായിരുന്നു?', q6:'അടുത്ത ത്രൈമാസ സെഷനിൽ നിങ്ങൾ എന്ത് മാറ്റം വരുത്തും?', q7:'Road to Chairman പ്രോഗ്രാം മറ്റൊരു നേതാവിന് ശുപാർശ ചെയ്യാൻ എത്ര സാധ്യതയുണ്ട്?', ta:'നിങ്ങളുടെ ഉത്തരം ഇവിടെ എഴുതുക...', nlo:'ഒട്ടും സാധ്യതയില്ല', nhi:'വളരെ സാധ്യത', stitle:'നന്ദി!', stext:'നിങ്ങളുടെ ഫീഡ്ബാക്ക് Road to Chairman പ്രോഗ്രാം മെച്ചപ്പെടുത്തുന്നതിൽ നിർണ്ണായകമാണ്.', slabel:'സർവേ പൂർത്തിയായി', sval:'Road to Chairman · ത്രൈമാസ സെഷൻ' },
+
+  kk: { name:'Қазақша', sub:'Тоқсандық сессия', title:'Road to Chairman — Бағалау сауалнамасы', step:'Қадам', banner:'Жалғастырмас бұрын, оң жақ жоғарғы бұрыштан қалаған тіліңізді таңдаңыз.', p0lbl:'Бастау', p0title:'Өз аймағыңызды таңдаңыз', p0q:'Сіз қай аймаққа жатасыз?', regions:['APAC (Қытайды қоспағанда Азия-Тынық мұхит)','Қытай','E&A (Еуропа, Таяу Шығыс, Африка)','EM (Еуразиялық нарықтар)','Үндістан','Мексика','SAMCAM/Бразилия','Басқа (нақтылаңыз)'], other_ph:'Нақтылаңыз...', next:'Келесі →', back:'← Артқа', submit:'Жіберу ✓', footer:'Жауаптарыңыз құпия және тек болашақ сессияларды жақсарту үшін қолданылады.', ai_note:'🤖 Аудармалар ЖИ арқылы жасалды · Қателіктер болуы мүмкін', q:'Сұрақ', s1lbl:'1-бөлім', s1title:'Сессияға қанағаттану', s2lbl:'2-бөлім', s2title:'Chairman жолының анықтығы', s3lbl:'3-бөлім', s3title:'Жақсарту үшін кері байланыс', q1:'Жалпы, осы тоқсандық сессиядан қаншалықты қанағаттандыңыз?', q1o:['Өте қанағаттандым','Біршама қанағаттандым','Қанағаттанбадым да, наразы да болмадым','Біршама наразы болдым','Өте наразы болдым'], q2:'Сессияның келесі элементтерінің әрқайсысынан қаншалықты қанағаттандыңыз?', sat:['Өте қанағатты','Қанағатты','Бейтарап','Қанағатсыз','Өте қанағатсыз','Қолданылмайды'], q2r:['Stephan Gratiziani мен сөйлесу','Аудио/видео сапасы','Аудармалар','Жалпы ұзақтығы','Контент сапасы'], q3:"Осы сессиядан кейін Chairman's Club-қа бару жолыңыз қаншалықты анық?", q3o:['Өте анық — мен не істеу керектігін нақты білемін','Жеткілікті анық — жақсы бағытым бар','Ішінара анық — бірнеше нәрсені нақтылау керек','Онша анық емес — маған әлі де сұрақтар бар','Мүлдем анық емес — маған қосымша нұсқаулық қажет'], q4:'Келесі мәлімдемелермен қаншалықты келісесіз немесе келіспейсіз?', agr:['Толық келісемін','Келісемін','Бейтарап','Келіспеймін','Мүлдем келіспеймін','Қолданылмайды'], q4r:['"Road to Chairman" есебі бизнесімді дамытуға пайдалы деректер берді','Тікелей коучинг менің ағымдағы қиындықтарым мен күмәндарымды шешті','Осы сессиядан келесі тоқсанға нақты іс-шаралармен кетіп барамын'], q5:'Осы тоқсандық сессияның ең құнды бөлігі не болды?', q6:'Келесі тоқсандық сессияда не өзгерткіңіз немесе қосқыңыз келеді?', q7:'Road to Chairman бағдарламасын ұйымыңыздағы басқа жетекшіге ұсыну мүмкіндігіңіз қаншалықты?', ta:'Жауабыңызды осында жазыңыз...', nlo:'Мүлдем мүмкін емес', nhi:'Өте мүмкін', stitle:'Рахмет!', stext:'Сіздің кері байланысыңыз Road to Chairman бағдарламасын жақсарту үшін өте маңызды.', slabel:'Сауалнама аяқталды', sval:'Road to Chairman · Тоқсандық сессия' },
+
+  mn: { name:'Монгол', sub:'Улирлын уулзалт', title:'Road to Chairman — Үнэлгээний судалгаа', step:'Алхам', banner:'Үргэлжлүүлэхийн өмнө баруун дээд буланд байрлах хүссэн хэлээ сонгоно уу.', p0lbl:'Эхлэл', p0title:'Бүсээ сонгоно уу', p0q:'Та аль бүсэд хамаардаг вэ?', regions:['APAC (Хятадыг оролцуулахгүй Ази-Номхон далай)','Хятад','E&A (Европ, Дорнод газар нутаг, Африк)','EM (Евразийн зах зээл)','Энэтхэг','Мексик','SAMCAM/Бразил','Бусад (тодорхойлно уу)'], other_ph:'Тодорхойлно уу...', next:'Дараагийн →', back:'← Буцах', submit:'Илгээх ✓', footer:'Таны хариултууд нууц бөгөөд зөвхөн ирээдүйн уулзалтуудыг сайжруулахад ашиглагдана.', ai_note:'🤖 Орчуулгыг AI-аар хийсэн · Алдаа агуулж болно', q:'Асуулт', s1lbl:'1-р хэсэг', s1title:'Уулзалтад сэтгэл ханамж', s2lbl:'2-р хэсэг', s2title:'Chairman-руу хүрэх замын тодорхой байдал', s3lbl:'3-р хэсэг', s3title:'Сайжруулах санал хүсэлт', q1:'Нийтдээ энэ улирлын уулзалтад хэр их сэтгэл ханамжтай байсан бэ?', q1o:['Маш их сэтгэл ханасан','Тодорхой хэмжээгээр сэтгэл ханасан','Сэтгэл ханаагүй ч дургүй болоогүй','Тодорхой хэмжээгээр дургүй байсан','Маш их дургүй байсан'], q2:'Уулзалтын дараах элементүүдэд хэр сэтгэл ханасан бэ?', sat:['Маш их сэтгэл ханасан','Сэтгэл ханасан','Төвийг сахисан','Сэтгэл ханаагүй','Маш их сэтгэл ханаагүй','Хамааралгүй'], q2r:['Stephan Gratiziani-тай ярилцлага','Аудио/Видео чанар','Орчуулга','Нийт үргэлжлэх хугацаа','Контентийн чанар'], q3:"Энэ уулзалтын дараа Chairman's Club-руу хүрэх замын тодорхой байдал ямар байна вэ?", q3o:['Маш тодорхой — юу хийхийг яг мэдэж байна','Хангалттай тодорхой — сайн чиглэл бий','Тодорхой хэмжээгээр — зарим зүйлийг нарийвчлах хэрэгтэй','Тийм ч тодорхой биш — асуулт байсаар байна','Огт тодорхой биш — илүү удирдамж хэрэгтэй'], q4:'Дараах мэдэгдлүүдтэй хэр зэрэг санал нэгтэй эсвэл эсрэгцэж байна вэ?', agr:['Бүрэн санал нэгтэй','Санал нэгтэй','Төвийг сахисан','Санал нийлэхгүй','Огт санал нийлэхгүй','Хамааралгүй'], q4r:['"Road to Chairman" тайлан бизнесийг хөгжүүлэхэд хэрэгтэй мэдээлэл өгсөн','Шууд дасгалжуулалт одоогийн сорилт, эргэлзээг шийдвэрлэсэн','Энэ уулзалтаас дараагийн улирлын тод тодорхой үйлдлүүдтэй гарч байна'], q5:'Энэ улирлын уулзалтын хамгийн үнэ цэнтэй хэсэг нь юу байсан бэ?', q6:'Дараагийн улирлын уулзалтад юуг өөрчилнө эсвэл нэмнэ вэ?', q7:'Road to Chairman хөтөлбөрийг өөрийн байгууллагын бусад удирдагчид санал болгох магадлал хэр вэ?', ta:'Хариултаа энд бичнэ үү...', nlo:'Огт магадлалгүй', nhi:'Маш их магадлалтай', stitle:'Баярлалаа!', stext:'Таны санал хүсэлт нь Road to Chairman хөтөлбөрийг сайжруулахад чухал ач холбогдолтой.', slabel:'Судалгаа дууссан', sval:'Road to Chairman · Улирлын уулзалт' },
+
+  uz: { name:"O'zbek", sub:"Choraklik sessiya", title:"Road to Chairman — Baholash so'rovnomasi", step:"Qadam", banner:"Davom etishdan oldin, yuqori o'ng burchakda o'zingiz yoqtirgan tilni tanlang.", p0lbl:"Boshlash", p0title:"Mintaqangizni tanlang", p0q:"Siz qaysi mintaqaga mansub siz?", regions:["APAC (Xitoisiz Osiyo-Tinch okeani)","Xitoy","E&A (Yevropa, Yaqin Sharq, Afrika)","EM (Yevrosiyo bozorlari)","Hindiston","Meksika","SAMCAM/Braziliya","Boshqa (ko'rsating)"], other_ph:"Ko'rsating...", next:"Keyingi →", back:"← Orqaga", submit:"Yuborish ✓", footer:"Javoblaringiz maxfiy bo'lib, faqat kelajakdagi sessiyalarni yaxshilash uchun ishlatiladi.", ai_note:"🤖 Tarjimalar AI yordamida yaratilgan · Noto'g'ri ma'lumotlar bo'lishi mumkin", q:"Savol", s1lbl:"1-bo'lim", s1title:"Sessiya mamnuniyati", s2lbl:"2-bo'lim", s2title:"Chairman yo'lining ravshanligi", s3lbl:"3-bo'lim", s3title:"Yaxshilash uchun fikr-mulohaza", q1:"Umuman olganda, ushbu choraklik sessiyadan qanchalik mamnun bo'ldingiz?", q1o:["Juda mamnun","Biroz mamnun","Na mamnun, na norozi","Biroz norozi","Juda norozi"], q2:"Sessiyaning quyidagi har bir elementidan qanchalik mamnun bo'ldingiz?", sat:["Juda mamnun","Mamnun","Neytral","Norozi","Juda norozi","Taalluqli emas"], q2r:["Stephan Gratiziani bilan suhbat","Audio/Video sifati","Tarjimalar","Umumiy davomiyligi","Kontent sifati"], q3:"Ushbu sessiyadan so'ng Chairman's Club ga yo'lingiz qanchalik ravshan?", q3o:["Juda ravshan — nima qilishni aniq bilaman","Ancha ravshan — yaxshi yo'nalishim bor","Biroz ravshan — ba'zi narsalarni aniqlashtirish kerak","Unchalik ravshan emas — hali savollarim bor","Umuman ravshan emas — ko'proq yo'riqnoma kerak"], q4:"Quyidagi iboralarga qanchalik qo'shilasiz yoki qo'shilmaysiz?", agr:["To'liq qo'shilaman","Qo'shilaman","Neytral","Qo'shilmayman","Umuman qo'shilmayman","Taalluqli emas"], q4r:["\"Road to Chairman\" hisoboti biznesimni rivojlantirish uchun foydali ma'lumotlar berdi","Jonli kouching hozirgi muammolarim va shubhalarimni hal qildi","Ushbu sessiyadan keyingi chorak uchun aniq harakatlar bilan chiqyapman"], q5:"Ushbu choraklik sessiyaning eng qimmatli qismi nima edi?", q6:"Keyingi choraklik sessiya uchun nimani o'zgartirgan bo'lar edingiz?", q7:"Road to Chairman dasturini tashkilotingizdan boshqa rahbarga tavsiya qilish ehtimoli qanchalik?", ta:"Javobingizni bu yerga yozing...", nlo:"Umuman ehtimolsiz", nhi:"Juda ehtimol", stitle:"Rahmat!", stext:"Fikringiz Road to Chairman dasturini yaxshilashda muhim ahamiyatga ega.", slabel:"So'rovnoma yakunlandi", sval:"Road to Chairman · Choraklik sessiya" },
+};
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+var lang = 'en';
+var current = 0;
+var TOTAL = 4;
+var answers = { region: null, other: '', q1: null, q2: {}, q3: null, q4: {}, q7: null };
+
+// Build lang selector
+var sel = document.getElementById('lang-select');
+Object.keys(LANGS).forEach(function(k) {
+  var o = document.createElement('option'); o.value = k; o.textContent = LANGS[k].name; sel.appendChild(o);
+});
+
+function buildMatrix(bodyId, headId, rows, cols, ak) {
+  var head = document.getElementById(headId), body = document.getElementById(bodyId);
+  head.innerHTML = '<tr><th></th>' + cols.map(function(c){ return '<th>'+c+'</th>'; }).join('') + '</tr>';
+  body.innerHTML = '';
+  rows.forEach(function(row, ri) {
+    var tr = document.createElement('tr');
+    var td0 = document.createElement('td'); td0.textContent = row; tr.appendChild(td0);
+    cols.forEach(function(_, ci) {
+      var td = document.createElement('td'), dot = document.createElement('div');
+      dot.className = 'mc' + (answers[ak][ri] === ci ? ' active' : '');
+      dot.setAttribute('data-r', ri);
+      (function(r,c,d){ d.onclick = function(){ body.querySelectorAll('[data-r="'+r+'"]').forEach(function(x){x.classList.remove('active');}); d.classList.add('active'); answers[ak][r]=c; checkPage(); }; })(ri,ci,dot);
+      td.appendChild(dot); tr.appendChild(td);
+    });
+    body.appendChild(tr);
+  });
+}
+
+function buildRadio(containerId, opts, answerKey) {
+  var c = document.getElementById(containerId); c.innerHTML = '';
+  opts.forEach(function(opt) {
+    var d = document.createElement('div');
+    d.className = 'radio-opt' + (answers[answerKey] === opt ? ' active' : '');
+    d.innerHTML = '<span class="radio-dot"></span>' + opt;
+    d.onclick = function(){ c.querySelectorAll('.radio-opt').forEach(function(x){x.classList.remove('active');}); d.classList.add('active'); answers[answerKey]=opt; checkPage(); };
+    c.appendChild(d);
+  });
+}
+
+function buildRegion() {
+  var T = LANGS[lang], c = document.getElementById('region-opts'); c.innerHTML = '';
+  T.regions.forEach(function(opt, i) {
+    var isOther = i === T.regions.length - 1;
+    var d = document.createElement('div');
+    d.className = 'radio-opt' + (answers.region === i ? ' active' : '');
+    d.innerHTML = '<span class="radio-dot"></span>' + opt;
+    d.onclick = function(){
+      c.querySelectorAll('.radio-opt').forEach(function(x){x.classList.remove('active');}); d.classList.add('active'); answers.region = i;
+      var oi = document.getElementById('other-input');
+      if (isOther) { oi.classList.add('show'); oi.placeholder = T.other_ph; } else { oi.classList.remove('show'); }
+      checkPage();
+    };
+    c.appendChild(d);
+  });
+  var oi = document.getElementById('other-input');
+  oi.className = 'other-input' + (answers.region === T.regions.length - 1 ? ' show' : '');
+  oi.placeholder = T.other_ph; oi.value = answers.other || '';
+  oi.oninput = function(){ answers.other = oi.value; checkPage(); };
+}
+
+function buildNPS() {
+  var T = LANGS[lang], grid = document.getElementById('nps-grid'); grid.innerHTML = '';
+  for (var v = 1; v <= 10; v++) {
+    (function(val){ var b = document.createElement('button'); b.className = 'nps-btn' + (answers.q7 === val ? ' active' : ''); b.textContent = val;
+      b.onclick = function(){ grid.querySelectorAll('.nps-btn').forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); answers.q7=val; checkPage(); };
+      grid.appendChild(b); })(v);
+  }
+  document.getElementById('nps-low').textContent = T.nlo;
+  document.getElementById('nps-high').textContent = T.nhi;
+}
+
+function updateText() {
+  var T = LANGS[lang];
+  document.getElementById('hdr-sub').textContent = T.sub;
+  if(document.getElementById('main-sec-lbl')) {
+    var secLabels = [T.s1lbl, T.s2lbl, T.s3lbl, T.p0lbl];
+    var secTitles = [T.s1title, T.s2title, T.s3title, T.p0title];
+    document.getElementById('main-sec-lbl').textContent = secLabels[current] || '';
+    document.getElementById('main-sec-title').textContent = secTitles[current] || '';
+  }
+  if(document.getElementById('hdr-title')) document.getElementById('hdr-title').textContent = T.title;
+  document.getElementById('step-lbl-txt').textContent = T.step;
+  document.getElementById('lang-banner').textContent = T.banner;
+  if(document.getElementById('p0-lbl')) document.getElementById('p0-lbl').textContent = T.p0lbl;
+  if(document.getElementById('p0-title')) document.getElementById('p0-title').textContent = T.p0title;
+  document.getElementById('p0-qnum').textContent = T.q + ' 1';
+  document.getElementById('p0-qtext').textContent = T.p0q;
+  if(document.getElementById('p1-lbl')) document.getElementById('p1-lbl').textContent = T.s1lbl;
+  if(document.getElementById('p1-title')) document.getElementById('p1-title').textContent = T.s1title;
+  document.getElementById('q1-num').textContent = T.q + ' 1';
+  document.getElementById('q1-text').textContent = T.q1;
+  document.getElementById('q2-num').textContent = T.q + ' 2';
+  document.getElementById('q2-text').textContent = T.q2;
+  if(document.getElementById('p2-lbl')) document.getElementById('p2-lbl').textContent = T.s2lbl;
+  if(document.getElementById('p2-title')) document.getElementById('p2-title').textContent = T.s2title;
+  document.getElementById('q3-num').textContent = T.q + ' 3';
+  document.getElementById('q3-text').textContent = T.q3;
+  document.getElementById('q4-num').textContent = T.q + ' 4';
+  document.getElementById('q4-text').textContent = T.q4;
+  if(document.getElementById('p3-lbl')) document.getElementById('p3-lbl').textContent = T.s3lbl;
+  if(document.getElementById('p3-title')) document.getElementById('p3-title').textContent = T.s3title;
+  document.getElementById('q5-num').textContent = T.q + ' 5';
+  document.getElementById('q5-text').textContent = T.q5;
+  document.getElementById('q5-ta').placeholder = T.ta;
+  document.getElementById('q6-num').textContent = T.q + ' 6';
+  document.getElementById('q6-text').textContent = T.q6;
+  document.getElementById('q7-num').textContent = T.q + ' 7';
+  document.getElementById('q7-text').textContent = T.q7;
+  document.getElementById('footer-note').textContent = T.footer;
+  document.getElementById('ai-note').textContent = T.ai_note;
+  document.getElementById('btn-back').textContent = T.back;
+  document.getElementById('s-title').textContent = T.stitle;
+  document.getElementById('s-text').textContent = T.stext;
+  document.getElementById('s-label').textContent = T.slabel;
+  document.getElementById('s-val').textContent = T.sval;
+  buildRegion();
+  buildRadio('q1-opts', T.q1o, 'q1');
+  buildRadio('q3-opts', T.q3o, 'q3');
+  buildMatrix('q2-body','q2-head', T.q2r, T.sat, 'q2');
+  buildMatrix('q4-body','q4-head', T.q4r, T.agr, 'q4');
+  buildNPS();
+}
+
+function updateNav() {
+  var T = LANGS[lang], isLast = current === TOTAL - 1;
+  document.getElementById('step-val').textContent = (current+1) + ' / ' + TOTAL;
+  if(document.getElementById('main-sec-lbl')) {
+    var T2 = LANGS[lang];
+    var secLabels2 = [T2.s1lbl, T2.s2lbl, T2.s3lbl, T2.p0lbl];
+    var secTitles2 = [T2.s1title, T2.s2title, T2.s3title, T2.p0title];
+    document.getElementById('main-sec-lbl').textContent = secLabels2[current] || '';
+    document.getElementById('main-sec-title').textContent = secTitles2[current] || '';
+  }
+  document.getElementById('prog').style.width = ((current/TOTAL)*100) + '%';
+  document.getElementById('btn-back').disabled = current === 0;
+  document.getElementById('btn-fwd').textContent = isLast ? T.submit : T.next;
+  var dots = document.getElementById('dots'); dots.innerHTML = '';
+  for (var i = 0; i < TOTAL; i++) { var d = document.createElement('div'); d.className='dot'+(i===current?' on':''); d.style.background=i<=current?'#2d7a4f':'#c8e6d4'; dots.appendChild(d); }
+  for (var p = 0; p < TOTAL; p++) { document.getElementById('page-'+p).className='page'+(p===current?' active':''); }
+}
+
+function isPageComplete() {
+  var T = LANGS[lang];
+  if (current===0) { if (!answers.q1) return false; for (var i=0;i<T.q2r.length;i++){if(answers.q2[i]===undefined)return false;} return true; }
+  if (current===1) { if (!answers.q3) return false; for (var i=0;i<T.q4r.length;i++){if(answers.q4[i]===undefined)return false;} return true; }
+  if (current===2) return answers.q7 !== null;
+  if (current===3) { if (answers.region===null) return false; if (answers.region===T.regions.length-1 && !answers.other.trim()) return false; return true; }
+  return false;
+}
+
+function checkPage() {
+  var btn = document.getElementById('btn-fwd');
+  if (isPageComplete()) btn.classList.remove('off'); else btn.classList.add('off');
+}
+
+function buildSavePayload() {
+  var T = LANGS[lang];
+  var q2labels = {}, q4labels = {};
+  T.q2r.forEach(function(row, i){ q2labels[row] = T.sat[answers.q2[i]] || ''; });
+  T.q4r.forEach(function(row, i){ q4labels[row] = T.agr[answers.q4[i]] || ''; });
+  return {
+    timestamp: new Date().toISOString(),
+    language: lang,
+    region: answers.region !== null ? T.regions[answers.region] : '',
+    region_other: answers.other || '',
+    q1_overall_satisfaction: answers.q1 || '',
+    q2_element_satisfaction: q2labels,
+    q3_path_clarity: answers.q3 || '',
+    q4_agreement: q4labels,
+    q5_most_valuable: document.getElementById('q5-ta').value || '',
+    q6_suggestions: document.getElementById('q6-ta').value || '',
+    q7_nps: answers.q7 || null,
+  };
+}
+
+function showSubmitting(on) {
+  var btn = document.getElementById('btn-fwd');
+  btn.textContent = on ? '⏳ Saving...' : LANGS[lang].submit;
+  btn.disabled = on;
+}
+
+function goNext() {
+  if (!isPageComplete()) return;
+  if (current === TOTAL - 1) {
+    // Show success immediately — save Firebase in background
+    markSubmitted();
+    var T = LANGS[lang];
+    document.getElementById('s-title').textContent = T.stitle;
+    document.getElementById('s-text').textContent = T.stext;
+    document.getElementById('s-label').textContent = T.slabel;
+    document.getElementById('s-val').textContent = T.sval;
+    document.getElementById('survey-wrap').style.display = 'none';
+    var ps = document.getElementById('pg-success');
+    ps.style.display = 'flex';
+    ps.style.minHeight = '100vh';
+    ps.style.alignItems = 'center';
+    ps.style.justifyContent = 'center';
+    var payload = buildSavePayload();
+    if (db) {
+      try {
+        db.ref('responses').push(payload)
+          .then(function(){ console.log('✓ Saved to Firebase'); })
+          .catch(function(err){ console.error('Firebase error:', err.code, err.message); });
+      } catch(e) { console.error('Firebase exception:', e); }
+    } else {
+      console.warn('Firebase not available — response not saved remotely');
+    }
+  } else {
+    current++;
+    updateNav();
+    checkPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function goBack() {
+  if (current>0) { current--; updateNav(); checkPage(); window.scrollTo({top:0,behavior:'smooth'}); }
+}
+
+function changeLang(l) { lang=l; updateText(); updateNav(); checkPage();
+if (!checkAlreadySubmitted()) { /* survey ready */ } }
+
+
+
+// ── ADMIN PANEL ──────────────────────────────────────────────────────────────
+var logoClickCount = 0, logoClickTimer = null;
+var adminCharts = {};
+
+function logoClick() {
+  logoClickCount++;
+  clearTimeout(logoClickTimer);
+  logoClickTimer = setTimeout(function(){ logoClickCount = 0; }, 2000);
+  if (logoClickCount >= 5) {
+    logoClickCount = 0;
+    document.getElementById('admin-overlay').style.display = 'block';
+    document.getElementById('admin-login-view').style.display = 'flex';
+    document.getElementById('admin-data-view').style.display = 'none';
+    document.getElementById('admin-pass').value = '';
+    document.getElementById('admin-error').style.display = 'none';
+    setTimeout(function(){ document.getElementById('admin-pass').focus(); }, 200);
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('admin-overlay').style.display === 'block') adminLogin();
+  if (e.key === 'Escape') closeAdmin();
+});
+
+function closeAdmin() {
+  document.getElementById('admin-overlay').style.display = 'none';
+  Object.values(adminCharts).forEach(function(c){ c.destroy(); });
+  adminCharts = {};
+}
+
+function adminLogin() {
+  var pass = document.getElementById('admin-pass').value;
+  if (pass === 'admin123') {
+    document.getElementById('admin-login-view').style.display = 'none';
+    document.getElementById('admin-data-view').style.display = 'block';
+    loadResponses();
+  } else {
+    document.getElementById('admin-error').style.display = 'block';
+    document.getElementById('admin-error').textContent = 'Incorrect password';
+    document.getElementById('admin-pass').value = '';
+    document.getElementById('admin-pass').focus();
+  }
+}
+
+function makeChart(id, type, labels, data, colors) {
+  if (adminCharts[id]) adminCharts[id].destroy();
+  var ctx = document.getElementById(id).getContext('2d');
+  adminCharts[id] = new Chart(ctx, {
+    type: type,
+    data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderWidth: 0, borderRadius: type === 'bar' ? 6 : 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: type !== 'bar', labels: { font: { family: 'Montserrat', size: 10 }, boxWidth: 12, padding: 8 } } },
+      scales: type === 'bar' ? { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f0f0f0' } }, x: { ticks: { font: { size: 9 } }, grid: { display: false } } } : {}
+    }
+  });
+}
+
+function openText(containerId, responses) {
+  var c = document.getElementById(containerId); c.innerHTML = '';
+  if (!responses.length) { c.innerHTML = '<p style="color:#a0c4b0;font-size:0.8rem;font-style:italic;">No responses yet</p>'; return; }
+  responses.forEach(function(r) {
+    var d = document.createElement('div');
+    d.style.cssText = 'background:#f4f9f4;border-radius:8px;padding:0.6rem 0.85rem;font-size:0.8rem;color:#1a3326;line-height:1.5;border-left:3px solid #2d7a4f;';
+    d.textContent = r;
+    c.appendChild(d);
+  });
+}
+
+function loadResponses() {
+  document.getElementById('admin-loading').style.display = 'block';
+  document.getElementById('admin-content').style.display = 'none';
+  Object.values(adminCharts).forEach(function(c){ c.destroy(); }); adminCharts = {};
+
+  if (!db) {
+    document.getElementById('admin-loading').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    document.getElementById('admin-content').innerHTML = '<p style="color:#ef4444;padding:1rem;">Firebase not connected.</p>';
+    return;
+  }
+  db.ref('responses').once('value').then(function(snap) {
+    document.getElementById('admin-loading').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+
+    var raw = snap.val() || {};
+    var docs = Object.values(raw).sort(function(a,b){ return b.timestamp > a.timestamp ? 1 : -1; });
+    var total = docs.length;
+
+    // KPIs
+    document.getElementById('kpi-total').textContent = total;
+
+    var npsSum = 0, npsCount = 0, satMap = {}, q3Map = {}, regionMap = {}, npsMap = {};
+    var q5s = [], q6s = [];
+
+    docs.forEach(function(d) {
+      if (d.q7_nps) { npsSum += d.q7_nps; npsCount++; npsMap[d.q7_nps] = (npsMap[d.q7_nps]||0)+1; }
+      if (d.q1_overall_satisfaction) {
+        var key = d.q1_overall_satisfaction.split('—')[0].trim().split(' ').slice(0,2).join(' ');
+        satMap[key] = (satMap[key]||0)+1;
+      }
+      if (d.q3_path_clarity) {
+        var key = d.q3_path_clarity.split('—')[0].trim().split(' ').slice(0,2).join(' ');
+        q3Map[key] = (q3Map[key]||0)+1;
+      }
+      if (d.region) regionMap[d.region.split('(')[0].trim()] = (regionMap[d.region.split('(')[0].trim()]||0)+1;
+      if (d.q5_most_valuable && d.q5_most_valuable.trim()) q5s.push(d.q5_most_valuable.trim());
+      if (d.q6_suggestions && d.q6_suggestions.trim()) q6s.push(d.q6_suggestions.trim());
+    });
+
+    var avgNps = npsCount ? (npsSum/npsCount).toFixed(1) : '—';
+    document.getElementById('kpi-nps').textContent = avgNps;
+
+    var topRegion = Object.entries(regionMap).sort(function(a,b){return b[1]-a[1];})[0];
+    document.getElementById('kpi-region').textContent = topRegion ? topRegion[0] : '—';
+
+    var satVals = Object.values(satMap);
+    var satAvg = satVals.length ? (satVals.reduce(function(a,b){return a+b;},0)/satVals.length).toFixed(1) : '—';
+    document.getElementById('kpi-sat').textContent = satAvg + (satAvg !== '—' ? '/5' : '');
+
+    var greens = ['#2d7a4f','#4caf78','#84cc9a','#a8dbb8','#c8e6d4','#dceee4'];
+
+    // Q1 Chart
+    setTimeout(function(){
+      var q1labels = Object.keys(satMap), q1data = Object.values(satMap);
+      makeChart('chart-q1','bar',q1labels,q1data,greens.slice(0,q1labels.length));
+
+      // Q3 Chart
+      var q3labels = Object.keys(q3Map), q3data = Object.values(q3Map);
+      makeChart('chart-q3','doughnut',q3labels,q3data,['#2d7a4f','#4caf78','#84cc9a','#eab308','#ef4444']);
+
+      // NPS chart
+      var npsLabels = [], npsData = [], npsColors = [];
+      for (var i=1;i<=10;i++) {
+        npsLabels.push(String(i));
+        npsData.push(npsMap[i]||0);
+        npsColors.push(i<=6?'#ef4444':i<=8?'#eab308':'#2d7a4f');
+      }
+      makeChart('chart-nps','bar',npsLabels,npsData,npsColors);
+
+      // Region chart
+      var rLabels = Object.keys(regionMap), rData = Object.values(regionMap);
+      makeChart('chart-region','doughnut',rLabels,rData,['#2d7a4f','#4caf78','#eab308','#378add','#e24b4a','#d4537e','#84cc9a','#888780']);
+
+      openText('open-q5', q5s);
+      openText('open-q6', q6s);
+    }, 100);
+
+  }).catch(function(err) {
+    document.getElementById('admin-loading').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+    document.getElementById('admin-content').innerHTML = '<p style="color:#ef4444;padding:1rem;">Error: ' + err.message + '</p>';
+  });
+}
+
+function updateCharCount(ta, countId) {
+  var el = document.getElementById(countId);
+  if (el) el.textContent = ta.value.length + ' / 5000 characters';
+}
+
+var ALREADY_MSGS = {
+  'en': ['Already submitted', 'You already responded', 'Thank you for participating. Your response has already been recorded.'],
+  'es': ['Ya enviaste tu respuesta', 'Ya respondiste', 'Gracias por participar. Tu respuesta ya fue registrada.'],
+  'fr': ['Déjà soumis', 'Vous avez déjà répondu', 'Merci pour votre participation. Votre réponse a déjà été enregistrée.'],
+  'pt': ['Já enviado', 'Você já respondeu', 'Obrigado por participar. Sua resposta já foi registrada.'],
+  'de': ['Bereits eingereicht', 'Sie haben bereits geantwortet', 'Danke für Ihre Teilnahme. Ihre Antwort wurde bereits gespeichert.'],
+  'it': ['Già inviato', 'Hai già risposto', 'Grazie per aver partecipato. La tua risposta è già stata registrata.'],
+  'ru': ['Уже отправлено', 'Вы уже ответили', 'Спасибо за участие. Ваш ответ уже был записан.'],
+  'zh': ['已提交', '您已回答過', '感謝您的參與。您的回答已被記錄。'],
+  'ja': ['送信済み', 'すでに回答済みです', 'ご参加ありがとうございます。回答はすでに記録されています。'],
+  'ko': ['이미 제출됨', '이미 응답하셨습니다', '참여해 주셔서 감사합니다. 응답이 이미 기록되었습니다.'],
+  'tr': ['Zaten gönderildi', 'Zaten yanıtladınız', 'Katılımınız için teşekkürler. Yanıtınız zaten kaydedildi.'],
+  'pl': ['Już wysłano', 'Już odpowiedziałeś/aś', 'Dziękujemy za udział. Twoja odpowiedź została już zarejestrowana.'],
+  'uk': ['Вже надіслано', 'Ви вже відповіли', 'Дякуємо за участь. Ваша відповідь вже зареєстрована.'],
+  'cs': ['Již odesláno', 'Již jste odpověděli', 'Děkujeme za účast. Vaše odpověď již byla zaznamenána.'],
+  'sk': ['Už odoslané', 'Už ste odpovedali', 'Ďakujeme za účasť. Vaša odpoveď už bola zaznamenaná.'],
+  'ro': ['Deja trimis', 'Ați răspuns deja', 'Vă mulțumim pentru participare. Răspunsul dvs. a fost deja înregistrat.'],
+  'hi': ['पहले ही सबमिट', 'आप पहले ही उत्तर दे चुके हैं', 'भाग लेने के लिए धन्यवाद। आपका उत्तर पहले ही दर्ज किया जा चुका है।'],
+  'hu': ['Már elküldve', 'Már válaszolt', 'Köszönjük a részvételt. Válaszát már rögzítettük.'],
+  'id': ['Sudah dikirim', 'Anda sudah merespons', 'Terima kasih telah berpartisipasi. Respons Anda telah dicatat.'],
+  'ms': ['Sudah dihantar', 'Anda sudah menjawab', 'Terima kasih kerana mengambil bahagian. Jawapan anda telah direkodkan.'],
+  'ta': ['ஏற்கனவே சமர்பிக்கப்பட்டது', 'நீங்கள் ஏற்கனவே பதிலளித்தீர்கள்', 'பங்கேற்பதற்கு நன்றி. உங்கள் பதில் ஏற்கனவே பதிவு செய்யப்பட்டது.'],
+  'te': ['ఇప్పటికే సమర్పించబడింది', 'మీరు ఇప్పటికే స్పందించారు', 'పాల్గొన్నందుకు ధన్యవాదాలు. మీ స్పందన ఇప్పటికే నమోదు చేయబడింది.'],
+  'kn': ['ಈಗಾಗಲೇ ಸಲ್ಲಿಸಲಾಗಿದೆ', 'ನೀವು ಈಗಾಗಲೇ ಉತ್ತರಿಸಿದ್ದೀರಿ', 'ಭಾಗವಹಿಸಿದ್ದಕ್ಕೆ ಧನ್ಯವಾದ. ನಿಮ್ಮ ಉತ್ತರ ಈಗಾಗಲೇ ದಾಖಲಾಗಿದೆ.'],
+  'ml': ['ഇതിനകം സമർപ്പിച്ചു', 'നിങ്ങൾ ഇതിനകം ഉത്തരം നൽകി', 'പങ്കെടുത്തതിന് നന்ദി. നിങ്ങളുടെ ഉത്തരം ഇതിനകം രേഖപ്പെടുത്തി.'],
+  'kk': ['Қазірдің өзінде жіберілді', 'Сіз қазірдің өзінде жауап бердіңіз', 'Қатысқаныңыз үшін рахмет. Жауабыңыз тіркелді.'],
+  'mn': ['Аль хэдийн илгээсэн', 'Та аль хэдийн хариулсан', 'Оролцсонд баярлалаа. Таны хариулт бүртгэгдсэн.'],
+  'uz': ['Allaqachon yuborilgan', 'Siz allaqachon javob berdingiz', 'Ishtirok etganingiz uchun rahmat. Javobingiz allaqachon qayd etilgan.'],
+};
+
+var SURVEY_KEY = 'rtc_survey_submitted_v1';
+
+function checkAlreadySubmitted() {
+  try {
+    if (localStorage.getItem(SURVEY_KEY)) {
+      var T = LANGS[lang];
+      var msgs = ALREADY_MSGS[lang] || ALREADY_MSGS['en'];
+      document.getElementById('already-label').textContent = msgs[0];
+      document.getElementById('already-title').textContent = msgs[1];
+      document.getElementById('already-text').textContent = msgs[2];
+      document.getElementById('survey-wrap').style.display = 'none';
+      var pa = document.getElementById('pg-already');
+      pa.style.display = 'flex';
+      pa.style.minHeight = '100vh';
+      pa.style.alignItems = 'center';
+      pa.style.justifyContent = 'center';
+      pa.style.background = '#f4f9f4';
+      return true;
+    }
+  } catch(e) { console.warn('localStorage error:', e); }
+  return false;
+}
+
+function markSubmitted() {
+  try { localStorage.setItem(SURVEY_KEY, '1'); } catch(e) {}
+}
+
+function resetSurvey() {
+  try { localStorage.removeItem(SURVEY_KEY); } catch(e) {}
+  location.reload();
+}
+
+function updateAlreadyScreen() {
+  var msgs = ALREADY_MSGS[lang] || ALREADY_MSGS['en'];
+  document.getElementById('already-label').textContent = msgs[0];
+  document.getElementById('already-title').textContent = msgs[1];
+  document.getElementById('already-text').textContent = msgs[2];
+}
+
+// ── FIREBASE INIT ───────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBMWzylOM0GfY9PAoU02ou1r_pk4StA-dA",
+  authDomain: "encuesta-rtc.firebaseapp.com",
+  databaseURL: "https://encuesta-rtc-default-rtdb.firebaseio.com",
+  projectId: "encuesta-rtc",
+  storageBucket: "encuesta-rtc.firebasestorage.app",
+  messagingSenderId: "296861837579",
+  appId: "1:296861837579:web:1169291f1acb72dca9da0e"
+};
+var db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+} catch(e) {
+  console.warn('Firebase init failed:', e);
+}
+
+try {
+  updateText();
+  updateNav();
+  checkPage();
+  if (!checkAlreadySubmitted()) { /* survey ready */ }
+} catch(e) {
+  console.error('Init error:', e);
+  // Fallback: make sure survey is visible
+  document.getElementById('survey-wrap').style.display = 'block';
+}
+</script>
+
+
+<!-- ADMIN DASHBOARD -->
+<div id="admin-overlay" style="display:none;position:fixed;inset:0;background:#f4f9f4;z-index:2000;overflow-y:auto;font-family:'Montserrat',sans-serif;">
+
+  <!-- LOGIN SCREEN -->
+  <div id="admin-login-view" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;">
+    <div style="background:#fff;border-radius:20px;padding:2.5rem;width:90%;max-width:380px;border:1px solid #c8e6d4;text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#2d7a4f,#4caf78);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:22px;">🔐</div>
+      <p style="color:#8ab09a;font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Admin Access</p>
+      <h2 style="color:#1a4d32;font-size:1.15rem;font-weight:700;margin-bottom:1.5rem;">Dashboard</h2>
+      <input id="admin-pass" type="password" placeholder="Enter password..." style="width:100%;padding:0.75rem 1rem;border:1.5px solid #c8e6d4;border-radius:12px;font-size:0.9rem;font-family:'Montserrat',sans-serif;outline:none;margin-bottom:0.75rem;box-sizing:border-box;text-align:center;"/>
+      <p id="admin-error" style="color:#ef4444;font-size:0.75rem;margin-bottom:0.75rem;display:none;">Incorrect password</p>
+      <button onclick="adminLogin()" style="width:100%;padding:0.8rem;border:none;border-radius:12px;background:linear-gradient(135deg,#2d7a4f,#4caf78);color:#fff;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:'Montserrat',sans-serif;margin-bottom:0.6rem;">Enter</button>
+      <button onclick="closeAdmin()" style="width:100%;padding:0.7rem;border:1px solid #c8e6d4;border-radius:12px;background:transparent;color:#8ab09a;font-size:0.82rem;cursor:pointer;font-family:'Montserrat',sans-serif;">Cancel</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="admin-data-view" style="display:none;max-width:900px;margin:0 auto;padding:1.5rem 1.25rem 3rem;">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+      <div>
+        <p style="color:#8ab09a;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;font-weight:600;margin-bottom:3px;">Admin Dashboard</p>
+        <h1 style="color:#1a4d32;font-size:1.2rem;font-weight:700;margin:0;">Survey Results</h1>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="loadResponses()" style="padding:0.5rem 1rem;border:1px solid #c8e6d4;border-radius:10px;background:#fff;color:#2d7a4f;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:'Montserrat',sans-serif;">↻ Refresh</button>
+        <button onclick="closeAdmin()" style="padding:0.5rem 1rem;border:1px solid #c8e6d4;border-radius:10px;background:#fff;color:#5a7a66;font-size:0.75rem;cursor:pointer;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:5px;">← Back to Survey</button>
+      </div>
+    </div>
+
+    <div id="admin-loading" style="text-align:center;padding:4rem;color:#8ab09a;font-size:0.9rem;">Loading responses...</div>
+
+    <div id="admin-content" style="display:none;">
+      <!-- KPI Cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem;">
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1rem;text-align:center;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:4px;">Responses</p>
+          <p id="kpi-total" style="color:#1a4d32;font-size:1.8rem;font-weight:700;margin:0;"></p>
+        </div>
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1rem;text-align:center;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:4px;">Avg NPS</p>
+          <p id="kpi-nps" style="color:#1a4d32;font-size:1.8rem;font-weight:700;margin:0;"></p>
+        </div>
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1rem;text-align:center;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:4px;">Top Region</p>
+          <p id="kpi-region" style="color:#1a4d32;font-size:0.9rem;font-weight:700;margin:0;line-height:1.3;"></p>
+        </div>
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1rem;text-align:center;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:4px;">Avg Satisfaction</p>
+          <p id="kpi-sat" style="color:#1a4d32;font-size:1.8rem;font-weight:700;margin:0;"></p>
+        </div>
+      </div>
+
+      <!-- Charts row 1 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1.25rem;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:10px;">Overall Satisfaction (Q1)</p>
+          <canvas id="chart-q1" height="180"></canvas>
+        </div>
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1.25rem;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:10px;">Path Clarity (Q3)</p>
+          <canvas id="chart-q3" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- Charts row 2 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1.25rem;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:10px;">NPS Distribution (Q7)</p>
+          <canvas id="chart-nps" height="180"></canvas>
+        </div>
+        <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1.25rem;">
+          <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:10px;">Responses by Region</p>
+          <canvas id="chart-region" height="180"></canvas>
+        </div>
+      </div>
+
+      <!-- Open responses -->
+      <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1.25rem;margin-bottom:10px;">
+        <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:1rem;">Open Responses — Q5: Most Valuable</p>
+        <div id="open-q5" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
+      </div>
+      <div style="background:#fff;border:1px solid #c8e6d4;border-radius:14px;padding:1.25rem;">
+        <p style="color:#8ab09a;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:1rem;">Open Responses — Q6: Suggestions</p>
+        <div id="open-q6" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ALREADY SUBMITTED SCREEN -->
+<div id="pg-already" style="display:none;min-height:100vh;background:#f4f9f4;align-items:center;justify-content:center;padding:2rem;font-family:'Montserrat',sans-serif;">
+  <div style="text-align:center;max-width:460px;">
+    <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#2d7a4f,#4caf78);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:30px;">✓</div>
+    <p style="color:#8ab09a;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;font-weight:600;margin-bottom:6px;" id="already-label">Already submitted</p>
+    <h1 style="color:#1a4d32;font-size:1.5rem;font-weight:700;margin-bottom:0.85rem;" id="already-title">You already responded</h1>
+    <p style="color:#5a7a66;font-size:0.9rem;line-height:1.7;margin-bottom:2rem;" id="already-text">Thank you for participating in the Road to Chairman survey. Your response has already been recorded.</p>
+  </div>
+</div>
+
+</body>
+</html>
